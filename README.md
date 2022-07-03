@@ -21,6 +21,7 @@ An TRENTOS-based application to showcase MAVLINK usage.
 
 # Compiling and Running
 Running in the order this document follows is recommended.
+Each section corresponds to one shell, there will be in total four parallel shells running.
 
 ## mavp2p
 The `172.17.0.1` address refers to the TRENTOS Docker container. You may need to change that one.
