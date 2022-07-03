@@ -1,0 +1,71 @@
+import <std_connector.camkes>;
+
+#include "system_config.h"
+#include "plat_nic.camkes"
+
+#include "RamDisk/RamDisk.camkes"
+RamDisk_COMPONENT_DEFINE(RamDisk)
+#include "StorageServer/camkes/StorageServer.camkes"
+StorageServer_COMPONENT_DEFINE(StorageServer)
+
+#include "NetworkStack_PicoTcp/camkes/NetworkStack_PicoTcp.camkes"
+NetworkStack_PicoTcp_COMPONENT_DEFINE(
+    NetworkStack_PicoTcp,
+    NIC_DRIVER_RINGBUFFER_SIZE,
+    NetworkStack_PicoTcp_NO_ADDITIONAL_INTERFACES
+)
+
+#include "TimeServer/camkes/TimeServer.camkes"
+TimeServer_COMPONENT_DEFINE(TimeServer)
+
+#include "components/TestApp/TestApp.camkes"
+
+assembly {
+    composition {
+        // Network driver
+        EXERCISE_DEMO_NIC_INSTANCE(nwDriver)
+
+        // Network stack
+        component NetworkStack_PicoTcp nwStack;
+        NetworkStack_PicoTcp_INSTANCE_CONNECT(
+            nwStack,
+            nwDriver
+        )
+        NetworkStack_PicoTcp_INSTANCE_CONNECT_CLIENTS(
+            nwStack,
+            testApp, networkStack
+        )
+
+        // Time server
+        component TimeServer timeServer;
+        TimeServer_INSTANCE_CONNECT_CLIENTS(
+            timeServer,
+            nwStack.timeServer_rpc, nwStack.timeServer_notify
+        )
+
+        // Demo Component
+        component TestApp testApp;
+    }
+
+    configuration {
+        // Storage
+        ramDisk.storage_size = 2 * 1024 * 1024;
+
+        // Network driver
+        EXERCISE_DEMO_NIC_CONFIG(nwDriver)
+
+        // Network stack
+        NetworkStack_PicoTcp_CLIENT_ASSIGN_BADGES(
+            testApp, networkStack
+        )
+        NetworkStack_PicoTcp_INSTANCE_CONFIGURE_CLIENTS(
+            nwStack,
+            2
+        )
+
+        // Time server
+        TimeServer_CLIENT_ASSIGN_BADGES(
+            nwStack.timeServer_rpc
+        )
+    }
+}

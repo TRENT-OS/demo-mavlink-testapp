@@ -1,0 +1,11 @@
+#pragma once
+
+#include "NIC_iMX6/NIC_iMX6.camkes"
+
+#define EXERCISE_DEMO_NIC_INSTANCE(_nic_) \
+    NIC_IMX6_INSTANCE(_nic_)
+
+#define EXERCISE_DEMO_NIC_CONFIG(_nic_) \
+    NIC_IMX6_MEMORY_CONFIG(_nic_) \
+    _nic_.fallback_mac = 1; \
+    _nic_.MAC_address = "\xDE\xAD\xDE\xAD\x00\x00";

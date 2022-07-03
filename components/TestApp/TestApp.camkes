@@ -1,0 +1,8 @@
+#include <if_OS_Socket.camkes>
+
+component TestApp {
+    control;
+
+    // Networking
+    IF_OS_SOCKET_USE(networkStack)
+}
