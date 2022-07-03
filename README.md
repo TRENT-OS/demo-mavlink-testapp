@@ -31,22 +31,25 @@ $ mavp2p udps:127.0.0.1:14550 tcpc:172.17.0.1:14540
 
 ## Microsoft AirSim
 ```sh
+$ cd "$AIRSIM_ROOT"
 $ ./Blocks.sh
 ```
 On some systems with outdated hardware, you may need to run the following command instead.
 Be aware that this is discouraged and deprecated.
 ```sh
+$ cd "$AIRSIM_ROOT"
 $ ./Blocks.sh -windowed -opengl4
 ```
 
 ## MAVLink-TestApp
 ```sh
-$ cd $TRENTOS_SDK_ROOT/..
+$ cd "$TRENTOS_SDK_ROOT/.."
 $ sdk/scripts/open_trentos_build_env.sh sdk/build-system.sh sdk/demos/demo_exercise sabre build-sabre-Debug-demo_exercise -DCMAKE_BUILD_TYPE=Debug
 $ sdk/scripts/open_trentos_test_env.sh -d '-p 14540:14540' -d '--name=trentos' sdk/demos/demo_exercise/run_qemu.sh build-sabre-Debug-demo_exercise/images/os_image.elf
 ```
 
 ## PX4-Autopilot
 ```sh
+$ cd "$PX4_ROOT"
 $ make px4_sitl none_iris
 ```
