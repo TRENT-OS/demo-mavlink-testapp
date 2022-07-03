@@ -2,6 +2,9 @@ An TRENTOS-based application to showcase MAVLINK usage.
 
 # Setup
 1. Set up TRENTOS and visit `$TRENTOS_SDK_ROOT/sdk/demos`.
+  ```
+  $ cd "$TRENTOS_SDK_ROOT/sdk/demos"
+  ```
 2. Clone this repository:
   ```sh
   $ git clone ssh://git@bitbucket.hensoldt-cyber.systems:7999/~paukai01/trentos-mavlink-testapp.git
@@ -18,6 +21,7 @@ An TRENTOS-based application to showcase MAVLINK usage.
   ```
 6. Install the Python packages as described [here](https://docs.px4.io/master/en/dev_setup/building_px4.html#failed-to-import-python-packages).
 7. Install the latest version of [mavp2p](https://github.com/aler9/mavp2p/releases).
+8. Install [airsim-agent](https://bitbucket.hensoldt-cyber.systems/users/paukai01/repos/airsim-agent/browse).
 
 # Compiling and Running
 Running in the order this document follows is recommended.
@@ -39,6 +43,11 @@ Be aware that this is discouraged and deprecated.
 ```sh
 $ cd "$AIRSIM_ROOT"
 $ ./Blocks.sh -windowed -opengl4
+```
+
+## Airsim-Agent
+```
+$ python3 "$AIRSIM_PROXY_ROOT"
 ```
 
 ## MAVLink-TestApp
