@@ -53,8 +53,8 @@ $ python3 "$AIRSIM_PROXY_ROOT"
 ## MAVLink-TestApp
 ```sh
 $ cd "$TRENTOS_SDK_ROOT/.."
-$ sdk/scripts/open_trentos_build_env.sh sdk/build-system.sh sdk/demos/demo_exercise sabre build-sabre-Debug-demo_exercise -DCMAKE_BUILD_TYPE=Debug
-$ sdk/scripts/open_trentos_test_env.sh -d '-p 14540:14540' -d '--name=trentos' sdk/demos/demo_exercise/run_qemu.sh build-sabre-Debug-demo_exercise/images/os_image.elf
+$ sdk/scripts/open_trentos_build_env.sh sdk/build-system.sh sdk/demos/trentos-mavlink-testapp sabre build-sabre-Debug-trentos-mavlink-testapp -DCMAKE_BUILD_TYPE=Debug
+$ sdk/scripts/open_trentos_test_env.sh -d '-p 14540:14540' -d '--name=trentos' sdk/demos/trentos-mavlink-testapp/run_qemu.sh build-sabre-Debug-trentos-mavlink-testapp/images/os_image.elf
 ```
 
 ## PX4-Autopilot
