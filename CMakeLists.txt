@@ -1,14 +1,15 @@
 cmake_minimum_required(VERSION 3.7.2)
 
-os_set_config_file(
-  "system_config.h"
-  CONFIG_PROJECT_NAME "system_config"
-)
+
+find_package("os-sdk" REQUIRED)
+os_sdk_set_defaults()
+os_sdk_setup(CONFIG_FILE "system_config.h" CONFIG_PROJECT "system_config")
 
 project(demo_exercise C)
 
 # Network stack
 include("plat/${PLATFORM}/plat_nic.cmake")
+CAmkESAddCPPInclude("plat/${PLATFORM}")
 
 NetworkStack_PicoTcp_DeclareCAmkESComponent(
   NetworkStack_PicoTcp
@@ -42,5 +43,4 @@ DeclareCAmkESComponent(
     os_socket_client
 )
 
-DeclareAndCreateCAmkESSystem(demo_exercise.camkes)
-GenerateSimulateScript()
+os_sdk_create_CAmkES_system("demo_exercise.camkes")
