@@ -179,12 +179,11 @@ static OS_Error_t sendMessage(const OS_Socket_Handle_t socket,
 typedef enum {
   PILOT_STATE_ARM,
   PILOT_STATE_ARM_DONE,
-  PILOT_STATE_ENABLE_GUIDED,
-  PILOT_STATE_ENABLE_GUIDED_DONE,
+  PILOT_STATE_QUERY_ALTITUDE,
+  PILOT_STATE_QUERY_ALTITUDE_DONE,
   PILOT_STATE_TAKEOFF,
   PILOT_STATE_TAKEOFF_DONE,
   PILOT_STATE_HOVERING,
-  PILOT_STATE_HOVERING_DONE,
   PILOT_STATE_FLYING,
   PILOT_STATE_FLYING_DONE,
 } PilotState;
@@ -194,16 +193,24 @@ typedef enum {
  */
 static OS_Error_t handleMavLinkConnection(const OS_Socket_Handle_t socket,
                                           mavlink_channel_t channel) {
+  // NOTE: This here is a mess that only demonstrates that communication
+  // somewhat works. Actual software that uses MAVLink would work out an
+  // actual architecture that does things correctly and ergonomically.
+
+  static const uint32_t DEFAULT_DEBOUNCE = 50;
+
   OS_Error_t ret;
 
   size_t receiveBufferLength;
   uint8_t receiveBuffer[OS_DATAPORT_DEFAULT_SIZE];
 
   PilotState state = PILOT_STATE_ARM;
-  uint32_t startup_counter = 200;
-  uint8_t target_companion = 0;
+  uint32_t debounce = 0;
+  uint8_t target_component = 0;
   uint8_t target_system = 0;
-  float highest_point[3] = {0.0, 0.0, 0.0};
+  float highest_point[3] = {NAN, NAN, NAN}; // NED relative to drone.
+  float altitude = NAN;
+  bool mode_set = false;
 
   for (;;) {
     ret = OS_Socket_read(socket, receiveBuffer, sizeof(receiveBuffer),
@@ -244,21 +251,29 @@ static OS_Error_t handleMavLinkConnection(const OS_Socket_Handle_t socket,
                         msg_in.compid, msg_in.sysid);
 
         switch (msg_in.msgid) {
-        case MAVLINK_MSG_ID_SERVO_OUTPUT_RAW:
-        case MAVLINK_MSG_ID_ACTUATOR_OUTPUT_STATUS: {
+        case MAVLINK_MSG_ID_HEARTBEAT: {
+          mavlink_heartbeat_t heartbeat;
+          mavlink_msg_heartbeat_decode(&msg_in, &heartbeat);
+          mode_set =
+              heartbeat.base_mode & MAV_MODE_FLAG_CUSTOM_MODE_ENABLED &&
+              heartbeat.custom_mode == 6; // PX4_CUSTOM_MAIN_MODE_OFFBOARD
+          break;
+        }
+        case MAVLINK_MSG_ID_ATTITUDE:
+        case MAVLINK_MSG_ID_SERVO_OUTPUT_RAW: {
+          if (debounce > 0) {
+            debounce--;
+            break;
+          }
+
           switch (state) {
           case PILOT_STATE_ARM: {
             target_system = msg_in.sysid;
-            target_companion = msg_in.compid;
-
-            if (startup_counter > 0) {
-              startup_counter--;
-              break;
-            }
+            target_component = msg_in.compid;
 
             mavlink_command_long_t cmd_out = {0};
             cmd_out.target_system = target_system;
-            cmd_out.target_component = target_companion;
+            cmd_out.target_component = target_component;
             cmd_out.command = MAV_CMD_COMPONENT_ARM_DISARM;
             cmd_out.param1 = 1.0; // Arm = true
             cmd_out.param2 = 0.0; // Force Arm = false
@@ -279,12 +294,12 @@ static OS_Error_t handleMavLinkConnection(const OS_Socket_Handle_t socket,
             Debug_LOG_INFO("Set state to `PILOT_STATE_ARM_DONE`");
             break;
           }
-          case PILOT_STATE_ENABLE_GUIDED: {
+          case PILOT_STATE_QUERY_ALTITUDE: {
             mavlink_command_long_t cmd_out = {0};
             cmd_out.target_system = target_system;
-            cmd_out.target_component = target_companion;
-            cmd_out.command = MAV_CMD_NAV_GUIDED_ENABLE;
-            cmd_out.param1 = 1.0; // Enable off-board control.
+            cmd_out.target_component = target_component;
+            cmd_out.command = MAV_CMD_REQUEST_MESSAGE;
+            cmd_out.param1 = MAVLINK_MSG_ID_ALTITUDE;
 
             mavlink_message_t msg_out;
             mavlink_msg_command_long_encode(MAVLINK_THIS_SYSTEM_ID,
@@ -297,21 +312,20 @@ static OS_Error_t handleMavLinkConnection(const OS_Socket_Handle_t socket,
                   socket.handleID, ret);
               return ret;
             }
-            state = PILOT_STATE_ENABLE_GUIDED_DONE;
-            Debug_LOG_INFO("Set state to `PILOT_STATE_ENABLE_GUIDED_DONE`");
+            state = PILOT_STATE_QUERY_ALTITUDE_DONE;
+            Debug_LOG_INFO("Set state to `PILOT_STATE_QUERY_ALTITUDE_DONE`");
             break;
           }
           case PILOT_STATE_TAKEOFF: {
             mavlink_command_long_t cmd_out = {0};
             cmd_out.target_system = target_system;
-            cmd_out.target_component = target_companion;
-            cmd_out.command = MAV_CMD_NAV_TAKEOFF_LOCAL;
-            cmd_out.param1 = 0.0;  // Pitch (rad)
-            cmd_out.param3 = 0.5;  // Ascend Rate (m/s)
-            cmd_out.param4 = 0.0;  // Yaw (rad)
-            cmd_out.param5 = 0.0;  // Y (m)
-            cmd_out.param6 = 0.0;  // X (m)
-            cmd_out.param7 = -2.0; // Z (m)
+            cmd_out.target_component = target_component;
+            cmd_out.command = MAV_CMD_NAV_TAKEOFF;
+            cmd_out.param1 = 0.0;            // Pitch (rad)
+            cmd_out.param4 = 0.0;            // Yaw (rad)
+            cmd_out.param5 = NAN;            // Latitude (m)
+            cmd_out.param6 = NAN;            // Longitude (m)
+            cmd_out.param7 = altitude + 3.0; // Altitude (m)
 
             mavlink_message_t msg_out;
             mavlink_msg_command_long_encode(MAVLINK_THIS_SYSTEM_ID,
@@ -329,28 +343,79 @@ static OS_Error_t handleMavLinkConnection(const OS_Socket_Handle_t socket,
             break;
           }
           case PILOT_STATE_FLYING: {
-            mavlink_set_position_target_local_ned_t setpoint;
-            setpoint.coordinate_frame = MAV_FRAME_LOCAL_NED;
-            // Flag to specify that this setpoint should ignore velocity,
-            // acceleration and yaw.
-            setpoint.type_mask = 0b0000110111111000;
-            setpoint.x = highest_point[0];
-            setpoint.y = highest_point[1];
-            setpoint.z = highest_point[2];
+            {
+              mavlink_set_position_target_local_ned_t setpoint = {0};
+              setpoint.target_component = target_component;
+              setpoint.target_system = target_system;
+              setpoint.coordinate_frame = MAV_FRAME_LOCAL_NED;
+              // Flag to specify that velocity, acceleration and yaw are not
+              // set.
+              setpoint.type_mask = 0b0000110111111000;
+              setpoint.x = highest_point[0];
+              setpoint.y = highest_point[1];
+              setpoint.z = highest_point[2];
 
-            mavlink_message_t msg_out;
-            mavlink_msg_set_position_target_local_ned_encode(
-                MAVLINK_THIS_SYSTEM_ID, MAVLINK_THIS_COMPONENT_ID, &msg_out,
-                &setpoint);
-            ret = sendMessage(socket, &msg_out);
-            if (ret != OS_SUCCESS) {
-              Debug_LOG_ERROR(
-                  "{Socket Handle: %d} `sendMessage` failed. Error code: %d",
-                  socket.handleID, ret);
-              return ret;
+              mavlink_message_t msg_out;
+              mavlink_msg_set_position_target_local_ned_encode(
+                  MAVLINK_THIS_SYSTEM_ID, MAVLINK_THIS_COMPONENT_ID, &msg_out,
+                  &setpoint);
+              ret = sendMessage(socket, &msg_out);
+              if (ret != OS_SUCCESS) {
+                Debug_LOG_ERROR(
+                    "{Socket Handle: %d} `sendMessage` failed. Error code: %d",
+                    socket.handleID, ret);
+                return ret;
+              }
+              Debug_LOG_DEBUG("Sent setpoint message.");
             }
-            Debug_LOG_INFO("Sent setpoint message.");
-            state = PILOT_STATE_FLYING_DONE;
+            {
+              // Need to send manual control messages so that PX4 doesn't assume
+              // that we disconnected.
+              mavlink_manual_control_t ctrl = {0};
+              ctrl.target = target_system;
+              ctrl.x = INT16_MAX;
+              ctrl.y = INT16_MAX;
+              ctrl.z = INT16_MAX;
+              ctrl.r = INT16_MAX;
+
+              mavlink_message_t msg_out;
+              mavlink_msg_manual_control_encode(MAVLINK_THIS_SYSTEM_ID,
+                                                MAVLINK_THIS_COMPONENT_ID,
+                                                &msg_out, &ctrl);
+              ret = sendMessage(socket, &msg_out);
+              if (ret != OS_SUCCESS) {
+                Debug_LOG_ERROR(
+                    "{Socket Handle: %d} `sendMessage` failed. Error code: %d",
+                    socket.handleID, ret);
+                return ret;
+              }
+              Debug_LOG_DEBUG("Sent manual control message.");
+            }
+
+            if (!mode_set) {
+              mavlink_command_long_t cmd_out = {0};
+              cmd_out.target_system = target_system;
+              cmd_out.target_component = target_component;
+              cmd_out.command = MAV_CMD_DO_SET_MODE;
+              cmd_out.param1 = MAV_MODE_FLAG_CUSTOM_MODE_ENABLED; // Base Mode
+              cmd_out.param2 =
+                  6.0; // Custom Mode = PX4_CUSTOM_MAIN_MODE_OFFBOARD
+              cmd_out.param3 = 0.0; // Submode
+
+              mavlink_message_t msg_out;
+              mavlink_msg_command_long_encode(MAVLINK_THIS_SYSTEM_ID,
+                                              MAVLINK_THIS_COMPONENT_ID,
+                                              &msg_out, &cmd_out);
+              ret = sendMessage(socket, &msg_out);
+              if (ret != OS_SUCCESS) {
+                Debug_LOG_ERROR(
+                    "{Socket Handle: %d} `sendMessage` failed. Error code: %d",
+                    socket.handleID, ret);
+                return ret;
+              }
+              Debug_LOG_DEBUG("Sent message to set mode to offboard.");
+            }
+
             break;
           }
           default: {
@@ -362,33 +427,72 @@ static OS_Error_t handleMavLinkConnection(const OS_Socket_Handle_t socket,
         case MAVLINK_MSG_ID_COMMAND_ACK: {
           mavlink_command_ack_t ack;
           mavlink_msg_command_ack_decode(&msg_in, &ack);
-          if (ack.result == MAV_RESULT_ACCEPTED) {
+          switch (ack.result) {
+          case MAV_RESULT_ACCEPTED: {
             switch (ack.command) {
             case MAV_CMD_COMPONENT_ARM_DISARM: {
-              state = PILOT_STATE_ENABLE_GUIDED;
-              Debug_LOG_INFO("Set state to `PILOT_STATE_ENABLE_GUIDED`");
+              state = PILOT_STATE_QUERY_ALTITUDE;
+              Debug_LOG_INFO("Set state to `PILOT_STATE_QUERY_ALTITUDE`");
               break;
             }
-            case MAV_CMD_NAV_GUIDED_ENABLE: {
-              state = PILOT_STATE_TAKEOFF;
-              Debug_LOG_INFO("Set state to `PILOT_STATE_TAKEOFF`");
-              break;
-            }
-            case MAV_CMD_NAV_TAKEOFF_LOCAL: {
-              state = PILOT_STATE_FLYING;
-              Debug_LOG_INFO("Set state to `PILOT_STATE_FLYING`");
+            case MAV_CMD_NAV_TAKEOFF: {
+              state = PILOT_STATE_HOVERING;
+              Debug_LOG_INFO("Set state to `PILOT_STATE_HOVERING`");
               break;
             }
             default: {
               break;
             }
             }
-          } else if (ack.result == MAV_RESULT_FAILED) {
+            break;
+          }
+          case MAV_RESULT_TEMPORARILY_REJECTED: {
+            switch (ack.command) {
+            case MAV_CMD_COMPONENT_ARM_DISARM: {
+              state = PILOT_STATE_ARM;
+              debounce = DEFAULT_DEBOUNCE;
+              Debug_LOG_INFO("Set state to `PILOT_STATE_ARM` to try again "
+                             "after rejection.");
+              break;
+            }
+            case MAV_CMD_NAV_TAKEOFF: {
+              state = PILOT_STATE_TAKEOFF;
+              debounce = DEFAULT_DEBOUNCE;
+              Debug_LOG_INFO("Set state to `PILOT_STATE_TAKEOFF` to try again "
+                             "after rejection.");
+              break;
+            }
+            default: {
+              break;
+            }
+            }
+            break;
+          }
+          case MAV_RESULT_IN_PROGRESS: {
+            Debug_LOG_DEBUG("Command %d in progress.", ack.command);
+            break;
+          }
+          case MAV_RESULT_FAILED: {
             Debug_LOG_ERROR("Command %d failed.", ack.command);
-          } else {
+            break;
+          }
+          default: {
             Debug_LOG_ERROR(
                 "Flight controller yielded result %d for command %d.",
                 ack.result, ack.command);
+            break;
+          }
+          }
+          break;
+        }
+        case MAVLINK_MSG_ID_ALTITUDE: {
+          mavlink_altitude_t resp_altitude;
+          mavlink_msg_altitude_decode(&msg_in, &resp_altitude);
+          altitude = resp_altitude.altitude_local;
+          Debug_LOG_DEBUG("Altitude: %f", (double)altitude);
+          if (state == PILOT_STATE_QUERY_ALTITUDE_DONE) {
+            state = PILOT_STATE_TAKEOFF;
+            Debug_LOG_INFO("Set state to `PILOT_STATE_TAKEOFF`");
           }
           break;
         }
@@ -410,11 +514,12 @@ static OS_Error_t handleMavLinkConnection(const OS_Socket_Handle_t socket,
             highest_point[2] = param_set.param_value;
             Debug_LOG_DEBUG("Set parameter `HIGHEST_POINT_Y` to %.2f",
                             param_set.param_value);
-            if (state == PILOT_STATE_HOVERING_DONE) {
+            if (state == PILOT_STATE_HOVERING) {
               state = PILOT_STATE_FLYING;
               Debug_LOG_INFO("Set state to `PILOT_STATE_FLYING`");
             }
           }
+
           break;
         }
         default: {
