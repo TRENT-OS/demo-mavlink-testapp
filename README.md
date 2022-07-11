@@ -7,7 +7,7 @@ An TRENTOS-based application to showcase MAVLINK usage.
   ```
 2. Clone this repository:
   ```sh
-  $ git clone ssh://git@bitbucket.hensoldt-cyber.systems:7999/~paukai01/trentos-mavlink-testapp.git
+  $ git clone ssh://git@bitbucket.cc.ebs.corp:7999/~paka101/trentos-mavlink-testapp.git
   ```
 3. Download and install the AirSim Blocks environment as described [here](https://microsoft.github.io/AirSim/use_precompiled/).
   A Docker environment can be found [here](https://microsoft.github.io/AirSim/docker_ubuntu/).
