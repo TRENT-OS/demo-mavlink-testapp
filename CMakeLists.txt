@@ -1,6 +1,5 @@
 cmake_minimum_required(VERSION 3.7.2)
 
-
 find_package("os-sdk" REQUIRED)
 os_sdk_set_defaults()
 #set(LibUtilsDefaultZfLogLevel 1 CACHE STRING "")
@@ -27,7 +26,6 @@ os_sdk_import_from_global_components("components/VirtQueue")
 project(demo_exercise C)
 
 # Network stack
-#include("plat/${PLATFORM}/plat_nic.cmake")
 CAmkESAddCPPInclude("plat/${PLATFORM}")
 
 NetworkStack_PicoTcp_DeclareCAmkESComponent(
