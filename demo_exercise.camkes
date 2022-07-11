@@ -1,7 +1,18 @@
 import <std_connector.camkes>;
 
 #include "system_config.h"
-#include "plat_nic.camkes"
+// Use Chanmux instead of nic for QEMU arm virt
+//#include "plat_nic.camkes"
+#include "ChanMux/ChanMux_UART.camkes"
+ChanMux_UART_COMPONENT_DEFINE(
+    ChanMux_UART,
+    nwDriver, data,
+    nwDriver, ctrl
+)
+
+#include "NIC_ChanMux/NIC_ChanMux.camkes"
+NIC_ChanMux_COMPONENT_DEFINE(NwDriver, NIC_DRIVER_RINGBUFFER_SIZE)
+
 
 #include "RamDisk/RamDisk.camkes"
 RamDisk_COMPONENT_DEFINE(RamDisk)
@@ -22,8 +33,25 @@ TimeServer_COMPONENT_DEFINE(TimeServer)
 
 assembly {
     composition {
+        //----------------------------------------------------------------------
+        // ChanMux + UART
+        //----------------------------------------------------------------------
+        component ChanMux_UART chanMux_UART;
+        component UART_CHANMUX uart;
+        ChanMux_UART_INSTANCE_CONNECT(chanMux_UART, uart)
+	//----------------------------------------------------------------------
+        // Network Driver
+        //----------------------------------------------------------------------
+        component NwDriver nwDriver;
+
+        ChanMux_UART_INSTANCE_CONNECT_CLIENT(
+            chanMux_UART,
+            nwDriver, data, ctrl
+        )
+
+
         // Network driver
-        EXERCISE_DEMO_NIC_INSTANCE(nwDriver)
+        //EXERCISE_DEMO_NIC_INSTANCE(nwDriver)
 
         // Network stack
         component NetworkStack_PicoTcp nwStack;
@@ -42,7 +70,7 @@ assembly {
             timeServer,
             nwStack.timeServer_rpc, nwStack.timeServer_notify
         )
-
+        
         // Demo Component
         component TestApp testApp;
     }
@@ -52,7 +80,11 @@ assembly {
         ramDisk.storage_size = 2 * 1024 * 1024;
 
         // Network driver
-        EXERCISE_DEMO_NIC_CONFIG(nwDriver)
+        //EXERCISE_DEMO_NIC_CONFIG(nwDriver)
+        ChanMux_UART_CLIENT_ASSIGN_BADGES(
+            nwDriver.chanMux_Rpc,
+            chanMuxStorage.chanMux_Rpc
+        )
 
         // Network stack
         NetworkStack_PicoTcp_CLIENT_ASSIGN_BADGES(

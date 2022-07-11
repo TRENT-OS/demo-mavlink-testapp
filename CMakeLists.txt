@@ -8,7 +8,7 @@ os_sdk_setup(CONFIG_FILE "system_config.h" CONFIG_PROJECT "system_config")
 project(demo_exercise C)
 
 # Network stack
-include("plat/${PLATFORM}/plat_nic.cmake")
+#include("plat/${PLATFORM}/plat_nic.cmake")
 CAmkESAddCPPInclude("plat/${PLATFORM}")
 
 NetworkStack_PicoTcp_DeclareCAmkESComponent(
@@ -19,6 +19,20 @@ NetworkStack_PicoTcp_DeclareCAmkESComponent(
     -DGATEWAY_ADDR=ETH_GATEWAY_ADDR
     -DSUBNET_MASK=ETH_SUBNET_MASK
 )
+
+#ChanMux Nic
+NIC_ChanMux_DeclareCAmkESComponent(
+    NwDriver
+    CHANMUX_CHANNEL_NIC_CTRL
+    CHANMUX_CHANNEL_NIC_DATA
+)
+
+ChanMux_UART_DeclareCAmkESComponents(
+    ChanMux_UART
+    components/ChanMux/ChanMux_config.c
+    system_config
+)
+
 
 # Time server
 TimeServer_DeclareCAmkESComponent(
