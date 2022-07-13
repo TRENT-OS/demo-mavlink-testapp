@@ -3,6 +3,7 @@ cmake_minimum_required(VERSION 3.7.2)
 
 find_package("os-sdk" REQUIRED)
 os_sdk_set_defaults()
+#set(LibUtilsDefaultZfLogLevel 1 CACHE STRING "")
 os_sdk_setup(CONFIG_FILE "system_config.h" CONFIG_PROJECT "system_config")
 
 project(demo_exercise C)

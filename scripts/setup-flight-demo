@@ -5,10 +5,10 @@ SESSION="Flight-demo"
 TARGET_PLATFORM="qemu-arm-virt-a53"
 
 #BUILD_TRENTOS="sdk/scripts/open_trentos_build_env.sh sdk/build-system.sh sdk/demos/trentos-mavlink-testapp sabre build-sabre-Debug-trentos-mavlink-testapp -DCMAKE_BUILD_TYPE=Debug"
-BUILD_TRENTOS="seos_tests/seos_sandbox/scripts/open_trentos_build_env.sh seos_tests/seos_sandbox/build-system.sh seos_tests/src/demos/trentos-mavlink-testapp $TARGET_PLATFORM build-$TARGET_PLATFORM-Debug-trentos-mavlink-testapp -DCMAKE_BUILD_TYPE=Debug"
+BUILD_TRENTOS="seos_tests/seos_sandbox/scripts/open_trentos_build_env.sh seos_tests/seos_sandbox/build-system.sh seos_tests/src/demos/demo_mavlink_testapp $TARGET_PLATFORM build-$TARGET_PLATFORM-Debug-demo_mavlink_testapp -DCMAKE_BUILD_TYPE=Debug"
 #EXEC_TRENTOS_DEMO="sdk/scripts/open_trentos_test_env.sh -d '-p 14540:14540' -d '--name=trentos' sdk/demos/trentos-mavlink-testapp/run_qemu.sh build-sabre-Debug-trentos-mavlink-testapp/images/os_image.elf"
 #EXEC_TRENTOS_DEMO="seos_tests/seos_sandbox/scripts/open_trentos_test_env.sh -d '-p 14540:14540' -d '--name=trentos' seos_tests/src/demos/trentos-mavlink-testapp/run_qemu.sh build-$TARGET_PLATFORM-Debug-trentos-mavlink-testapp/images/os_image.elf"
-EXEC_TRENTOS_DEMO="cd build-$TARGET_PLATFORM-Debug-trentos-mavlink-testapp && ../qemu/build/aarch64-softmmu/qemu-system-aarch64 -machine virt -cpu cortex-a53 -nographic  -m size=1024M -serial mon:stdio -serial tcp:localhost:4444,server  -kernel images/capdl-loader-image-arm-qemu-arm-virt"
+EXEC_TRENTOS_DEMO="cd build-$TARGET_PLATFORM-Debug-demo_mavlink_testapp && ../qemu/build/aarch64-softmmu/qemu-system-aarch64 -machine virt -cpu cortex-a53 -nographic  -m size=1024M -serial mon:stdio -serial tcp:localhost:4444,server  -kernel images/capdl-loader-image-arm-qemu-arm-virt"
 #PROJECTPATH="cd /home/flohau01/TrentOS-Training"
 PROJECTPATH="cd ../../../../.."
 SCRIPTPATH="$(pwd)"
@@ -29,6 +29,8 @@ echo "Please click in Popup window on OK"
 sleep 10
 
 tmux split-window -v 'cd airsim-agent && python3 "$AIRSIM_PROXY_ROOT"'
+
+tmux set-option -g history-limit 50000
 
 tmux new-window -t $SESSION:1 -n 'Flight Controller' 'cd PX4-Autopilot && make px4_sitl none_iris'
 
