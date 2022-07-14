@@ -59,8 +59,6 @@ TimeServer_DeclareCAmkESComponent(
 DeclareCAmkESComponent(
   TestApp
   INCLUDES
-    include/mavlink
-    include/mavlink/common
   SOURCES
     components/TestApp/src/TestApp.c
   C_FLAGS
@@ -69,6 +67,7 @@ DeclareCAmkESComponent(
   LIBS
     system_config
     lib_debug
+    lib_mavlink
     os_core_api
     os_filesystem
     os_socket_client

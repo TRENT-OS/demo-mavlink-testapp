@@ -1,19 +1,9 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "OS_Error.h"
 #include "OS_Socket.h"
-#include "common/mavlink.h"
-#include "interfaces/if_OS_Socket.h"
 #include "lib_debug/Debug.h"
-#include "mavlink_msg_actuator_output_status.h"
-#include "mavlink_msg_command_long.h"
-#include "mavlink_msg_param_set.h"
-#include "mavlink_msg_param_value.h"
-#include "minimal/mavlink_msg_heartbeat.h"
-#include "network/OS_NetworkTypes.h"
-#include "network/OS_SocketTypes.h"
-#include "system_config.h"
+#include "mavlink/common/mavlink.h"
 #include <camkes.h>
 
 static const if_OS_Socket_t networkStackCtx = IF_OS_SOCKET_ASSIGN(networkStack);
