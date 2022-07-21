@@ -162,6 +162,7 @@ static OS_Error_t sendMessage(const OS_Socket_Handle_t socket,
       break;
     }
     case OS_ERROR_TRY_AGAIN: {
+      Debug_LOG_DEBUG("{Socket Handle: %d} `OS_Socket_write` returned try again", socket.handleID);
       continue;
     }
     default: {
