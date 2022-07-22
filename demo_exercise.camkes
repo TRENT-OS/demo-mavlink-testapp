@@ -63,6 +63,16 @@ TimeServer_COMPONENT_DEFINE(TimeServer)
 
 #include "components/TestApp/TestApp.camkes"
 
+
+component PingClient {
+    control;
+    /* Virtqueue connection for send and recv */
+    uses VirtQueueDev recv;
+    uses VirtQueueDrv send;
+    emits Callback self;
+    consumes Callback ping_wait;
+}
+
 assembly {
     composition {
         //----------------------------------------------------------------------

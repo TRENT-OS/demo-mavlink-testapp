@@ -14,6 +14,8 @@ set(LibUSB OFF CACHE BOOL "" FORCE)
 set(VmInitRdFile ON CACHE BOOL "" FORCE)
 #set(VmVirtioConsole ON CACHE BOOL "" FORCE)
 set(CapDLLoaderMaxObjects 8192 CACHE STRING "" FORCE)
+set(VmPCISupport ON CACHE BOOL "" FORCE)
+set(VmVirtioNetVirtqueue ON CACHE BOOL "" FORCE)
 
 include("${CMAKE_CURRENT_LIST_DIR}/plat/${PLATFORM}/plat.cmake")
 
@@ -72,6 +74,20 @@ DeclareCAmkESComponent(
     os_core_api
     os_filesystem
     os_socket_client
+)
+
+DeclareCAmkESComponent(
+    PingClient
+    INCLUDES
+        # no include paths needed
+    SOURCES
+        components/PingClient/ping_client.c
+    C_FLAGS
+        -Wall
+    -Werror
+    LIBS
+        virtqueue
+        sel4_autoconf
 )
 
 #-------------------------------------------------------------------------------
