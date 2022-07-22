@@ -1,3 +1,9 @@
 [submodule "include/mavlink"]
 	path = include/mavlink
 	url = ../../ext/mavlink_c_library_v2.git
+[submodule "camkes-vm-images"]
+	path = camkes-vm-images
+	url = ../../ext/camkes-vm-images.git
+[submodule "camkes-vm-linux"]
+	path = camkes-vm-linux
+	url = ../../ext/camkes-vm-linux.git
