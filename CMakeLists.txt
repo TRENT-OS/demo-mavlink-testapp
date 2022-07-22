@@ -4,7 +4,23 @@ cmake_minimum_required(VERSION 3.7.2)
 find_package("os-sdk" REQUIRED)
 os_sdk_set_defaults()
 #set(LibUtilsDefaultZfLogLevel 1 CACHE STRING "")
+
+
+# Kernel settings
+set(KernelArmHypervisorSupport ON CACHE BOOL "" FORCE)
+set(KernelArmVtimerUpdateVOffset OFF CACHE BOOL "" FORCE)
+set(KernelArmDisableWFIWFETraps ON CACHE BOOL "" FORCE)
+set(LibUSB OFF CACHE BOOL "" FORCE)
+set(VmInitRdFile ON CACHE BOOL "" FORCE)
+#set(VmVirtioConsole ON CACHE BOOL "" FORCE)
+set(CapDLLoaderMaxObjects 8192 CACHE STRING "" FORCE)
+
+include("${CMAKE_CURRENT_LIST_DIR}/plat/${PLATFORM}/plat.cmake")
+
 os_sdk_setup(CONFIG_FILE "system_config.h" CONFIG_PROJECT "system_config")
+os_sdk_import_camkes_vm_arm()
+os_sdk_import_from_global_components("components/FileServer")
+os_sdk_import_from_global_components("components/VirtQueue")
 
 project(demo_exercise C)
 
@@ -57,5 +73,66 @@ DeclareCAmkESComponent(
     os_filesystem
     os_socket_client
 )
+
+#-------------------------------------------------------------------------------
+# config
+AddCamkesCPPFlag(cpp_flags CONFIG_VARS VmEmmc2NoDMA)
+
+if(NOT KernelPlatformQEMUArmVirt)
+    AddCamkesCPPFlag(cpp_flags CONFIG_VARS VmVUSB)
+endif()
+
+if(KernelPlatformTK1)
+    AddCamkesCPPFlag(cpp_flags CONFIG_VARS Tk1DeviceFwd Tk1Insecure)
+endif()
+
+
+#-------------------------------------------------------------------------------
+# File server
+
+list(
+    APPEND CMAKE_MODULE_PATH
+    "${CMAKE_CURRENT_LIST_DIR}/camkes-vm-images"
+    "${CMAKE_CURRENT_LIST_DIR}/camkes-vm-linux"
+)
+find_package(camkes-vm-images REQUIRED)
+find_package(camkes-vm-linux REQUIRED)
+
+include("${CAMKES_VM_LINUX_HELPERS_PATH}")
+
+AddToFileServer("linux" "${CAMKES_VM_IMAGES_DIR}/${PLATFORM}/linux")
+set(VM_ROOTFS_FILE "${CAMKES_VM_IMAGES_DIR}/${PLATFORM}/rootfs.cpio.gz")
+AddToFileServer("linux-initrd" "${VM_ROOTFS_FILE}")
+UpdateDtbFromInitrd(
+    "${CAMKES_VM_IMAGES_DIR}/qemu-arm-virt/linux-dtb"
+    "${VM_ROOTFS_FILE}"
+    "0x4d700000"
+    target_dtb_gen
+    DTB_FOR_VM
+)
+AddToFileServer("linux-dtb" "${DTB_FOR_VM}" DEPENDS target_dtb_gen)
+
+
+DefineCAmkESVMFileServer(
+    INSTANCE "fileServer"
+    FILES
+        "linux:${VM_IMG_LINUX}"
+        "linux-initrd:${VM_IMG_ROOTFS}"
+        "linux-dtb:${VM_IMG_DTB_PATCHED}"
+    DEPENDS
+        target_dtb_gen
+)
+
+ExtendCAmkESComponentInstance(
+    FileServer
+    fileServer
+    LIBS
+        fileserver_cpio
+)
+
+
+CAmkESAddCPPInclude("${SDK_SEL4_CAMKES_DIR}/libs/sel4_projects_libs/libsel4vm/include/sel4vm")
+
+#-------------------------------------------------------------------------------
 
 os_sdk_create_CAmkES_system("demo_exercise.camkes")

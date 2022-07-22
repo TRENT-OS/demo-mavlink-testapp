@@ -8,12 +8,16 @@ TARGET_PLATFORM="qemu-arm-virt-a53"
 BUILD_TRENTOS="seos_tests/seos_sandbox/scripts/open_trentos_build_env.sh seos_tests/seos_sandbox/build-system.sh seos_tests/src/demos/demo_mavlink_testapp $TARGET_PLATFORM build-$TARGET_PLATFORM-Debug-demo_mavlink_testapp -DCMAKE_BUILD_TYPE=Debug"
 #EXEC_TRENTOS_DEMO="sdk/scripts/open_trentos_test_env.sh -d '-p 14540:14540' -d '--name=trentos' sdk/demos/trentos-mavlink-testapp/run_qemu.sh build-sabre-Debug-trentos-mavlink-testapp/images/os_image.elf"
 #EXEC_TRENTOS_DEMO="seos_tests/seos_sandbox/scripts/open_trentos_test_env.sh -d '-p 14540:14540' -d '--name=trentos' seos_tests/src/demos/trentos-mavlink-testapp/run_qemu.sh build-$TARGET_PLATFORM-Debug-trentos-mavlink-testapp/images/os_image.elf"
-EXEC_TRENTOS_DEMO="cd build-$TARGET_PLATFORM-Debug-demo_mavlink_testapp && ../qemu/build/aarch64-softmmu/qemu-system-aarch64 -machine virt -cpu cortex-a53 -nographic  -m size=1024M -serial mon:stdio -serial tcp:localhost:4444,server  -kernel images/capdl-loader-image-arm-qemu-arm-virt"
+#EXEC_TRENTOS_DEMO="cd build-$TARGET_PLATFORM-Debug-demo_mavlink_testapp && ../qemu/build/aarch64-softmmu/qemu-system-aarch64 -machine virt -cpu cortex-a53 -nographic  -m size=1024M -serial mon:stdio -serial tcp:localhost:4444,server -kernel images/capdl-loader-image-arm-qemu-arm-virt"
+EXEC_TRENTOS_DEMO="cd build-$TARGET_PLATFORM-Debug-demo_mavlink_testapp && ../qemu/build/aarch64-softmmu/qemu-system-aarch64 -machine virt,virtualization=on,highmem=off,secure=off -cpu cortex-a53 -nographic  -m size=3072M -serial mon:stdio -serial tcp:localhost:4444,server -serial telnet:localhost:4445,server -kernel images/capdl-loader-image-arm-qemu-arm-virt"
 #PROJECTPATH="cd /home/flohau01/TrentOS-Training"
 PROJECTPATH="cd ../../../../.."
 SCRIPTPATH="$(pwd)"
 
-echo "compile project"
+#echo "compile project"
+echo "$PROJECTPATH"
+echo "$BUILD_TRENTOS"
+sleep 1
 $PROJECTPATH
 $BUILD_TRENTOS
 cd $SCRIPTPATH
@@ -26,7 +30,17 @@ tmux split-window -h 'mavp2p udps:127.0.0.1:14550 tcpc:10.0.0.11:14540'
 
 echo "Please click in Popup window on OK"
 
-sleep 10
+sleep 5
+echo "5"
+sleep 1
+echo "4"
+sleep 1
+echo "3"
+sleep 1
+echo "2"
+sleep 1
+echo "1"
+sleep 1
 
 tmux split-window -v 'cd airsim-agent && python3 "$AIRSIM_PROXY_ROOT"'
 
@@ -41,6 +55,8 @@ tmux split-window -h "$PROJECTPATH && $EXEC_TRENTOS_DEMO && bash"
 
 sleep 1
 tmux new-window -t $SESSION:2 -n 'Proxy_App' "$PROJECTPATH && OS-SDK/build/proxy/proxy_app -c TCP:4444 -t 1 && bash"
+
+tmux split-window -h "$PROJECTPATH && telnet localhost 4445"
 #tmux new-window -t $SESSION:2 -n 'Proxy_App' "bash"
 
 tmux attach -t $SESSION:1

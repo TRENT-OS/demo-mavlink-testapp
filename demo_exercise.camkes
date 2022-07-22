@@ -1,4 +1,36 @@
 import <std_connector.camkes>;
+import <global-connectors.camkes>;
+
+//-----------------------------------------
+// Include VM
+/*
+ * can't import VM.camkes, because it adds dependencies on components instead of
+ * just the interfaces
+ *
+ */
+import <vm-connectors.camkes>;
+import <seL4VMDTBPassthrough.idl4>;
+import <Batch.idl4>;
+import <PutChar.idl4>;
+import <GetChar.idl4>;
+import <VirtQueues.idl4>;
+import <FileServerInterface.camkes>;
+
+#include <configurations/vm.h>
+component VM {
+    VM_INIT_DEF()
+}
+
+
+// Components
+import <VirtQueue/VirtQueue.camkes>;
+import <FileServer/FileServer.camkes>;
+
+
+// Platform specific configurations
+#include <plat.camkes>
+
+//------------------------------------------
 
 #include "system_config.h"
 // Use Chanmux instead of nic for QEMU arm virt
@@ -73,6 +105,25 @@ assembly {
 
         // Demo Component
         component TestApp testApp;
+        //-----------------------------------------------------
+        // VM components
+        //-----------------------------------------------------
+        component FileServer fileServer;
+
+        component VM vm0;
+        connection seL4VMDTBPassthrough vm0_dtb(
+            from vm0.dtb_self,
+            to   vm0.dtb
+        );
+        connection seL4GlobalAsynch vm0_notify_ready(
+            from vm0.notification_ready_connector,
+            to   vm0.notification_ready
+        );
+        connection seL4RPCDataport vm0_fs(
+            from vm0.fs,
+            to   fileServer.fs_ctrl
+        );
+
     }
 
     configuration {
@@ -99,5 +150,27 @@ assembly {
         TimeServer_CLIENT_ASSIGN_BADGES(
             nwStack.timeServer_rpc
         )
+
+        //-------------------------------------------
+        // VM configuration
+        //-------------------------------------------
+        fileServer.heap_size = 0x200000; // 128 KiB seems enough
+
+        // see also plat.camkes for more config values
+        vm0.num_vcpus               = 1;
+        vm0.base_prio               = 100;
+        vm0._priority               = 101;
+
+        vm0.num_extra_frame_caps    = 0;
+        vm0.extra_frame_map_address = 0;
+        vm0.cnode_size_bits         = 23;
+        vm0.simple_untyped24_pool   = 12;
+        vm0.asid_pool               = true;
+        vm0.global_endpoint_base    = 1 << 27;
+        vm0.simple                  = true;
+        vm0.sem_value               = 0;
+        vm0.heap_size               = 0x300000;
+        vm0.fs_shmem_size           = 0x100000;
+
     }
 }
