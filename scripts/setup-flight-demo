@@ -32,7 +32,7 @@ tmux split-window -v 'cd airsim-agent && python3 "$AIRSIM_PROXY_ROOT"'
 
 tmux set-option -g history-limit 50000
 
-tmux new-window -t $SESSION:1 -n 'Flight Controller' 'cd PX4-Autopilot && make px4_sitl none_iris'
+tmux new-window -t $SESSION:1 -n 'Flight Controller' 'cd PX4-Autopilot && PX4_SIM_SPEED_FACTOR=3 make px4_sitl none_iris'
 
 
 #tmux split-window -h "$PROJECTPATH && $BUILD_TRENTOS && $EXEC_TRENTOS_DEMO"
