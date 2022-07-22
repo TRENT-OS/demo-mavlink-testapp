@@ -69,6 +69,9 @@ NetworkStack_PicoTcp_COMPONENT_DEFINE(
 #include "TimeServer/camkes/TimeServer.camkes"
 TimeServer_COMPONENT_DEFINE(TimeServer)
 
+#include "FCAdapter/camkes/FCAdapter.camkes"
+FCAdapter_COMPONENT_DEFINE(FCAdapter)
+
 #include "components/TestApp/TestApp.camkes"
 
 
@@ -113,7 +116,8 @@ assembly {
         )
         NetworkStack_PicoTcp_INSTANCE_CONNECT_CLIENTS(
             nwStack,
-            testApp, networkStack
+            testApp, networkStack,
+            fcAdapter, networkStack
         )
 
         // Time server
@@ -121,6 +125,13 @@ assembly {
         TimeServer_INSTANCE_CONNECT_CLIENTS(
             timeServer,
             nwStack.timeServer_rpc, nwStack.timeServer_notify
+        )
+        
+        // Flight Controller Adapter
+        component FCAdapter fcAdapter;
+        FCAdapter_INSTANCE_CONNECT_CLIENTS(
+            fcAdapter,
+            testApp, fcAdapter
         )
 
         // Demo Component
@@ -184,7 +195,8 @@ assembly {
 
         // Network stack
         NetworkStack_PicoTcp_CLIENT_ASSIGN_BADGES(
-            testApp, networkStack
+            testApp, networkStack,
+            fcAdapter, networkStack
         )
         NetworkStack_PicoTcp_INSTANCE_CONFIGURE_CLIENTS(
             nwStack,
@@ -194,6 +206,13 @@ assembly {
         // Time server
         TimeServer_CLIENT_ASSIGN_BADGES(
             nwStack.timeServer_rpc
+        )
+
+        // Flight Controller Adapter
+        FCAdapter_INSTANCE_CONFIGURE(
+            fcAdapter,
+            ETH_ADDR,
+            MAVLINK_LISTEN_PORT
         )
 
         //-------------------------------------------
@@ -229,6 +248,5 @@ assembly {
         ping_client.send_id = 1;
         ping_client.send_shmem_size = 32768;
         ping_client.vswitch_mac_address = "02:00:00:00:AA:02";
-
     }
 }

@@ -56,6 +56,10 @@ TimeServer_DeclareCAmkESComponent(
   TimeServer
 )
 
+FCAdapter_DeclareCAmkESComponent(
+  FCAdapter
+)
+
 DeclareCAmkESComponent(
   TestApp
   INCLUDES
@@ -65,12 +69,11 @@ DeclareCAmkESComponent(
     -Wall
     -Werror
   LIBS
-    system_config
     lib_debug
     lib_mavlink
     os_core_api
-    os_filesystem
     os_socket_client
+    system_config
 )
 
 DeclareCAmkESComponent(
