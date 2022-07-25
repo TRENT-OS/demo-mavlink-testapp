@@ -91,7 +91,7 @@ void print_ip_packet(void *ip_buf, size_t ip_length)
 int create_arp_req_reply(char *recv_data, unsigned int recv_data_size)
 {
     char reply_buffer[ETHERMTU];
-
+    static uint8_t first_run=0;
     //---------------------------------
     //| ethhdr | ether_arp            |
     //---------------------------------
@@ -100,6 +100,11 @@ int create_arp_req_reply(char *recv_data, unsigned int recv_data_size)
     struct ethhdr *send_reply = (struct ethhdr *) reply_buffer;
     struct ether_arp *arp_reply = (struct ether_arp *)(reply_buffer + sizeof(struct ethhdr));
 
+    if(first_run == 0)
+    {
+        pingready_emit();
+        first_run = 1;
+    }
     memcpy(send_reply->h_dest, arp_req->arp_sha, ETH_ALEN);
     send_reply->h_proto = htons(ETH_P_ARP);
 

@@ -16,9 +16,17 @@ import <GetChar.idl4>;
 import <VirtQueues.idl4>;
 import <FileServerInterface.camkes>;
 
+struct vswitch_mapping {
+       string mac_addr;
+       int send_id;
+       int recv_id;
+};
+
 #include <configurations/vm.h>
 component VM {
     VM_INIT_DEF()
+    attribute vswitch_mapping vswitch_layout[] = [];
+    attribute string vswitch_mac_address = "";
 }
 
 
@@ -71,6 +79,7 @@ component PingClient {
     uses VirtQueueDrv send;
     emits Callback self;
     consumes Callback ping_wait;
+    emits PingReady pingready;
 }
 
 assembly {
@@ -134,8 +143,29 @@ assembly {
             to   fileServer.fs_ctrl
         );
 
-    }
+        component PingClient ping_client;
+        component VirtQueueInit ping_vqinit0;
+        component VirtQueueInit ping_vqinit1;
 
+        connection seL4VirtQueues ping_virtq_conn0(
+	    to ping_vqinit0.init,
+	    from ping_client.send,
+	    from vm0.recv
+	);
+        connection seL4VirtQueues ping_virtq_conn1(
+	    to ping_vqinit1.init,
+	    from ping_client.recv,
+	    from vm0.send
+	);
+        connection seL4GlobalAsynchCallback ping_global_callback(
+	    from ping_client.self,
+	    to ping_client.ping_wait
+	);
+
+	connection seL4NotificationNative PingReady (
+	from ping_client.pingready, to testApp.pingready
+	);
+    }
     configuration {
         // Storage
         ramDisk.storage_size = 2 * 1024 * 1024;
@@ -181,6 +211,19 @@ assembly {
         vm0.sem_value               = 0;
         vm0.heap_size               = 0x300000;
         vm0.fs_shmem_size           = 0x100000;
+
+        vm0.recv_id = 0;
+        vm0.recv_shmem_size = 32768;
+        vm0.send_id = 1;
+        vm0.send_shmem_size = 32768;
+        vm0.vswitch_mac_address = "02:00:00:00:AA:01";
+        vm0.vswitch_layout = [{"mac_addr": "02:00:00:00:AA:02", "recv_id": 0, "send_id":1}];
+
+        ping_client.recv_id = 0;
+        ping_client.recv_shmem_size = 32768;
+        ping_client.send_id = 1;
+        ping_client.send_shmem_size = 32768;
+        ping_client.vswitch_mac_address = "02:00:00:00:AA:02";
 
     }
 }

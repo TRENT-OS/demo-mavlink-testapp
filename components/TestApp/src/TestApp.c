@@ -18,6 +18,13 @@
 
 static const if_OS_Socket_t networkStackCtx = IF_OS_SOCKET_ASSIGN(networkStack);
 
+typedef struct
+{
+	void (*wait_for_ready)(void);
+} if_vm0_t;
+
+static const if_vm0_t vm0 = {.wait_for_ready = pingready_wait,};
+
 /**
  * Waits until the network stack is initialized.
  */
@@ -538,6 +545,9 @@ int run() {
   OS_Error_t ret;
   Debug_LOG_INFO("Starting TestApp.");
 
+  Debug_LOG_INFO("wait for vm0");
+  vm0.wait_for_ready();
+  Debug_LOG_INFO("vm0 ready");
   ret = waitForNetworkStackInit(&networkStackCtx);
   if (ret != OS_SUCCESS) {
     Debug_LOG_ERROR("`waitForNetworkStackInit` failed. Error code: %d", ret);
