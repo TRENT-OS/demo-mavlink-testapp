@@ -118,24 +118,48 @@ include("${CAMKES_VM_LINUX_HELPERS_PATH}")
 
 AddToFileServer("linux" "${CAMKES_VM_IMAGES_DIR}/${PLATFORM}/linux")
 set(VM_ROOTFS_FILE "${CAMKES_VM_IMAGES_DIR}/${PLATFORM}/rootfs.cpio.gz")
-AddToFileServer("linux-initrd" "${VM_ROOTFS_FILE}")
+
+# patch root-fs
+AddFileToOverlayDir(
+    "interfaces"
+    "${CMAKE_CURRENT_SOURCE_DIR}/overlay_files/network_interfaces/interfaces"
+    "etc/network"
+    overlay
+)
+AddFileToOverlayDir(
+    "S90ping_test"
+    "${CMAKE_CURRENT_SOURCE_DIR}/overlay_files/init_scripts/ping_test"
+    "etc/init.d"
+    overlay
+)
+AddOverlayDirToRootfs(
+    overlay
+    "${CAMKES_VM_IMAGES_DIR}/${PLATFORM}/rootfs.cpio.gz"
+    "buildroot"
+    "rootfs_install"
+    VM_IMG_ROOTFS_PATCHED
+    rootfs_target
+    GZIP
+)
+AddToFileServer("linux-initrd" "${VM_IMG_ROOTFS_PATCHED}")
+
 UpdateDtbFromInitrd(
     "${CAMKES_VM_IMAGES_DIR}/qemu-arm-virt/linux-dtb"
-    "${VM_ROOTFS_FILE}"
+    "${VM_IMG_ROOTFS_PATCHED}"
     "0x4d700000"
     target_dtb_gen
     DTB_FOR_VM
 )
 AddToFileServer("linux-dtb" "${DTB_FOR_VM}" DEPENDS target_dtb_gen)
 
-
 DefineCAmkESVMFileServer(
     INSTANCE "fileServer"
     FILES
         "linux:${VM_IMG_LINUX}"
-        "linux-initrd:${VM_IMG_ROOTFS}"
-        "linux-dtb:${VM_IMG_DTB_PATCHED}"
+        "linux-initrd:${VM_IMG_ROOTFS_PATCHED}"
+	"linux-dtb:${DTB_FOR_VM}"
     DEPENDS
+        rootfs_target
         target_dtb_gen
 )
 
