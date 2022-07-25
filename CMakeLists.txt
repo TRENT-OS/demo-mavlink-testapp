@@ -150,14 +150,14 @@ UpdateDtbFromInitrd(
     target_dtb_gen
     DTB_FOR_VM
 )
-AddToFileServer("linux-dtb" "${DTB_FOR_VM}" DEPENDS target_dtb_gen)
+#AddToFileServer("linux-dtb" "${DTB_FOR_VM}" DEPENDS target_dtb_gen)
 
 DefineCAmkESVMFileServer(
     INSTANCE "fileServer"
     FILES
         "linux:${VM_IMG_LINUX}"
         "linux-initrd:${VM_IMG_ROOTFS_PATCHED}"
-	"linux-dtb:${DTB_FOR_VM}"
+	#	"linux-dtb:${DTB_FOR_VM}"
     DEPENDS
         rootfs_target
         target_dtb_gen
