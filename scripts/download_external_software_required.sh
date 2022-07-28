@@ -15,7 +15,7 @@ wget https://github.com/aler9/mavp2p/releases/download/v0.6.5/mavp2p_v0.6.5_linu
 echo "Extract mavp2p"
 tar -xvf mavp2p_v0.6.5_linux_amd64.tar.gz
 echo "Download airsim-agent"
-git clone ssh://git@bitbucket.hensoldt-cyber.systems:7999/~paukai01/airsim-agent.git
+git clone ssh://git@bitbucket.cc.ebs.corp:7999/~paka101/airsim-agent.git
 echo "Install dependencies for airsim-agent"
 cd airsim-agent && pip install --user airsim==1.5.0 pymavlink
 cd ..
