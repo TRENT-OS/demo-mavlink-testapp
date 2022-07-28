@@ -17,6 +17,8 @@
 #include <netinet/in.h>
 #include <netinet/ip_icmp.h>
 #include <arpa/inet.h>
+#include <netinet/udp.h>
+
 //#define DEBUG
 #ifdef DEBUG
 #define DEBUG_PRINT(fmt, args...) printf(fmt, ## args)
@@ -28,6 +30,13 @@
 
 #define ICMP_MSG_SIZE 64 - sizeof(struct icmphdr)
 #define IPV4_LENGTH 4
+
+#define LINUX_UDPPORT 10000
+#define PINGCLIENT_UDPPORT 10000
+#define LINUX_IP_ADDR "192.168.1.1"
+#define PINGCLIENT_IP_ADDR "192.168.1.2"
+#define LINUX_MAC_ADDR "02:00:00:00:AA:01"
+#define PINGCLIENT_MAC_ADDR "02:00:00:00:AA:02"
 
 virtqueue_device_t recv_virtqueue;
 virtqueue_driver_t send_virtqueue;
@@ -74,9 +83,8 @@ int send_outgoing_packet(char *outgoing_data, size_t outgoing_data_size)
 void print_ip_packet(void *ip_buf, size_t ip_length)
 {
     struct iphdr *ip = ip_buf;
-    struct icmphdr *icmp = ip_buf + sizeof(struct iphdr);
-
     unsigned char *ip_packet = (unsigned char *)ip_buf;
+
     printf("Packet Contents:");
     for (int i = 0; i < ip_length; i++) {
         if (i % 15 == 0) {
@@ -91,8 +99,17 @@ void print_ip_packet(void *ip_buf, size_t ip_length)
     printf("IP Header - Version: IPv%d protocol: %d | src address: %s",
            ip->version, ip->protocol, inet_ntoa(saddr));
     printf(" | dest address: %s\n", inet_ntoa(daddr));
-    printf("ICMP Header - Type: %d | id: %d | seq: %d\n",
-           icmp->type, icmp->un.echo.id, icmp->un.echo.sequence);
+    if (ip->protocol == 1)
+    {
+        struct icmphdr *icmp = ip_buf + sizeof(struct iphdr);
+        printf("ICMP Header - Type: %d | id: %d | seq: %d\n",
+               icmp->type, icmp->un.echo.id, icmp->un.echo.sequence);
+    }
+    if (ip->protocol == 17)
+    {
+        struct udphdr *udp = ip_buf + sizeof(struct iphdr);
+        printf("UDP Header - Sourceport: %d | Destinationport: %d \n", ntohs(udp->uh_sport), ntohs(udp->uh_dport));
+    }
     printf("\n");
 }
 
@@ -137,6 +154,75 @@ int create_arp_req_reply(char *recv_data, unsigned int recv_data_size)
     arp_reply->ea_hdr.ar_pln = IPV4_LENGTH;
 
     return send_outgoing_packet(reply_buffer, sizeof(struct ethhdr) + sizeof(struct ether_arp));
+}
+
+int send_udp_packet(void)
+{
+    char buffer[ETHERMTU];
+    DEBUG_PRINT("PINGCLIENT prepar UDP package\n");
+    struct ethhdr *eth_req = (struct ethhdr *) buffer;
+    struct iphdr *ip_req = (struct iphdr *)(buffer + sizeof(struct ethhdr));
+    struct udphdr *udp_req = (struct udphdr *)(buffer + sizeof(struct ethhdr) + sizeof(struct iphdr));
+    char *packet = (buffer + sizeof(struct ethhdr) + sizeof(struct iphdr) + sizeof(struct udphdr));
+    // Convert mac from string to bytes
+    struct ether_addr linux_mac;
+    struct ether_addr pingclient_mac;
+    ether_aton_r(LINUX_MAC_ADDR, &linux_mac);
+    ether_aton_r(PINGCLIENT_MAC_ADDR, &pingclient_mac);
+
+    char linux_ip[] = LINUX_IP_ADDR;
+    char pingclient_ip[] = PINGCLIENT_IP_ADDR;
+    //fill in default information
+    ip_req->version = 4;
+    ip_req->ihl = 5; // length of header (ihl * 32 bits)
+    ip_req->tos = 0; // type of service field
+    ip_req->id = 0;
+    ip_req->frag_off = 0;
+    ip_req->ttl = 3;
+    // Specify IP UDP
+    ip_req->protocol = 17;
+    eth_req->h_proto = htons(ETH_P_IP);
+    //Don't care about the checksum
+    udp_req->uh_sum = 0;
+
+    // Fill in information about linux destination
+    udp_req->uh_dport = htons(LINUX_UDPPORT);
+    ip_req->daddr = inet_addr(linux_ip);
+
+    // Fill in infromation about pingclient source
+    udp_req->uh_sport = htons(PINGCLIENT_UDPPORT);
+    ip_req->saddr = inet_addr(pingclient_ip);
+    DEBUG_PRINT("PINGCLIENT source max: ");
+    for(int i = 0; i < ETH_ALEN; i++)
+    {
+        DEBUG_PRINT("%x:", pingclient_mac.ether_addr_octet[i]);
+        eth_req->h_source[i] = pingclient_mac.ether_addr_octet[i];
+        eth_req->h_dest[i] = linux_mac.ether_addr_octet[i];
+    }
+    DEBUG_PRINT("\n");
+    for(int i = 0; i < 10; i++)
+    {
+        *(packet + i) = i;
+    }
+    udp_req->uh_ulen = htons(sizeof(struct udphdr) + 10);
+    DEBUG_PRINT("upd len: %d", ntohs(udp_req->uh_ulen));
+    ip_req->tot_len = htons(sizeof(struct iphdr) + sizeof(struct udphdr) + 10);
+    DEBUG_PRINT("ip len: %d", ntohs(ip_req->tot_len));
+    /* Need to set checksum to 0 before calculating checksum of the header */
+    ip_req->check = 0;
+    ip_req->check = one_comp_checksum((char *)ip_req, sizeof(struct iphdr));
+#ifdef DEBUG
+    print_ip_packet((char *)ip_req, ntohs(ip_req->tot_len));
+#endif
+    DEBUG_PRINT("PINGCLIENT send UDP package\n");
+    DEBUG_PRINT("Packet raw hex:");
+    for(int i = 0; i < sizeof(struct ethhdr) + sizeof(struct iphdr) + sizeof(struct udphdr) + 10; i++)
+    {
+        DEBUG_PRINT(" %02x", buffer[i]);
+    }
+    DEBUG_PRINT("\n");
+    return send_outgoing_packet(buffer,
+                                sizeof(struct ethhdr) + sizeof(struct iphdr) + sizeof(struct udphdr) + 10);
 }
 
 int create_icmp_req_reply(char *recv_data, unsigned int recv_data_size)
