@@ -1,0 +1,119 @@
+/*
+ * Copyright (C) 2022, HENSOLDT Cyber GmbH
+ */
+
+/*
+ *  FCAdapter CAmkES Component
+ *
+ *  to be used as:
+ *
+ *      #include "FCAdapter/camkes/FCAdapter.camkes"
+ *
+ *      FCAdapter_COMPONENT_DEFINE(FCAdapter)
+ *
+ */
+
+#pragma once
+
+import <std_connector.camkes>;
+
+#include "if_OS_Socket.camkes"
+#include "FCAdapter/camkes/if_FCAdapter.camkes"
+
+/*
+ * Declare the FCAdapter with a given type name:
+ *
+ *      FCAdapter_COMPONENT_DEFINE(
+ *          <name>
+ *      )
+ */
+#define FCAdapter_COMPONENT_DEFINE( \
+    _name_) \
+    \
+    component _name_ { \
+        control; \
+        \
+        IF_OS_SOCKET_USE(networkStack)  \
+        \
+        IF_FCADAPTER_PROVIDE(fcAdapter) \
+    }
+
+//------------------------------------------------------------------------------
+
+
+ /*
+ * Connects a variable number of client components to the if_FCAdapter interface
+ * of a FCAdapter instance.
+ *
+ * @param[in] inst Name of the FCAdapter component instance.
+ * @param[in] ...  List of client user component instance names and the prefix
+ *                 used to generate a unique name for the connectors used in
+ *                 IF_FCADAPTER_USE() and that should be connected with the
+ *                 fcAdapter instance specified earlier. To connect several
+ *                 user components at once follow the pattern of:
+ *                 <inst_user1>, <inst_user1_prefix_if_fcAdapter>,
+ *                 <inst_user2>, <inst_user2_prefix_if_fcAdapter>,
+ *                 ...
+ */
+#define FCAdapter_INSTANCE_CONNECT_CLIENTS( \
+    _inst_, \
+    ...) \
+    \
+    FOR_EACH_2P(IF_FCADAPTER_CONNECT, \
+                _inst_, \
+                fcAdapter, \
+                __VA_ARGS__)
+
+//------------------------------------------------------------------------------
+
+/*
+ * Assign a single badge.
+ *
+ * This is used internally.
+ */
+#define FCAdapter_BADGE_ASSIGNER( \
+    _unused0_, \
+    _unused1_, \
+    _inst_user_, \
+    _inst_user_field_prefix_, \
+    _num_) \
+    \
+    _inst_user_._inst_user_field_prefix_ ## _rpc_attributes = (100 + _num_);
+
+
+/*
+ * Assign a badge to the connected client:
+ *
+ *      FCAdapter_CLIENT_ASSIGN_BADGE(
+ *          <client_rpc>, <ID>
+ *      )
+ *
+ * NOTE: IDs need to start at 101!
+ *
+ * This is used internally.
+ */
+#define FCAdapter_CLIENT_ASSIGN_BADGE( \
+    _client_, \
+    _prefix_, \
+    _val_) \
+    \
+    _client_._prefix_ ## _attributes = _val_;
+
+
+ /*
+ * Assign badges to a list of clients; badge IDs will start at 101 and then be
+ * incremented.
+ *
+ *      FCAdapter_CLIENT_ASSIGN_BADGES(
+ *          <inst_user1>, <inst_user1_prefix_if_fcAdapter>,
+ *          <inst_user2>, <inst_user2_prefix_if_fcAdapter>,
+ *           ...
+ *      )
+ *
+ * NOTE: FCAdapter can take up to 4 clients at the moment!
+ *
+ */
+#define FCAdapter_CLIENT_ASSIGN_BADGES( \
+    ...) \
+    \
+    FOR_EACH_2P(FCAdapter_BADGE_ASSIGNER,UNUSED,UNUSED,__VA_ARGS__)

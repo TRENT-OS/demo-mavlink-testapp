@@ -1,0 +1,88 @@
+/*
+ * Copyright (C) 2022, HENSOLDT Cyber GmbH
+ */
+
+#pragma once
+
+procedure if_FCAdapter {
+    include "OS_Error.h";
+    include "OS_Socket.h";
+    include "mavlink/minimal/mavlink.h";
+
+    OS_Error_t
+    init(
+        refin OS_Socket_Addr_t addr,
+        in uint8_t mavChannel
+    );
+    
+    OS_Error_t
+    recvMessage(
+        out mavlink_message_t message
+    );
+    
+    OS_Error_t
+    sendMessage(
+        refin mavlink_message_t message
+    );
+};
+
+//==============================================================================
+// Component interface fields macros
+//==============================================================================
+
+/**
+ * Declares the interface fields of a component implementing the user side of
+ * a if_FCAdapter interface.
+ *
+ * @param[in] prefix Prefix to be used to generate a unique name for the
+ *                   connector.
+ */
+#define IF_FCADAPTER_USE( \
+    prefix) \
+    \
+    uses if_FCAdapter prefix##_rpc;
+
+/**
+ * Declares the interface fields of a component implementing the FCAdapter
+ * interface. This currently allows for up to 8 clients to be connected.
+ *
+ * @param[in] prefix Prefix to be used to generate a unique name for the
+ *                   connector.
+ */
+#define IF_FCADAPTER_PROVIDE( \
+    prefix) \
+    \
+    provides if_FCAdapter prefix##_rpc;
+ 
+//==============================================================================
+// Component interface field connection macros
+//==============================================================================
+
+/**
+ * Connect a user of an if_FCAdapter interface to a provider.
+ *
+ * @param[in] inst_fc_adapter              Name of the interface provider
+ *                                         component instance.
+ * @param[in] inst_fc_adapter_field_prefix Prefix used to generate a unique
+ *                                         name for the connectors in
+ *                                         IF_FCADAPTER_PROVIDE().
+ * @param[in] inst_user                    Name of the interface user component
+ *                                         instance.
+ * @param[in] inst_user_field_prefix       Prefix used to generate a unique name
+ *                                         for the connectors in
+ *                                         IF_FCADAPTER_USE().
+ * @param[in] user_num                     Number of the interface provider port
+ *                                         and event to connect the user component
+ *                                         to.
+ */
+#define IF_FCADAPTER_CONNECT( \
+    inst_fc_adapter, \
+    inst_fc_adapter_field_prefix, \
+    inst_user, \
+    inst_user_field_prefix, \
+    user_num) \
+    \
+    connection seL4RPCDataport conn_##inst_fc_adapter##_##inst_user##_rpc( \
+        from inst_user.inst_user_field_prefix##_rpc, \
+        to   inst_fc_adapter.inst_fc_adapter_field_prefix##_rpc);
+       
