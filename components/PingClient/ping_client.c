@@ -78,14 +78,19 @@ int send_outgoing_packet(char *outgoing_data, size_t outgoing_data_size)
     void *buf = NULL;
     int err = camkes_virtqueue_buffer_alloc(&send_virtqueue, &buf, outgoing_data_size);
     if (err) {
+        printf("PINGCLIENT Allocaction of buffer failed\n");
         return -1;
     }
+    DEBUG_PRINT("PINGCLIENT virtqueue object created\n");
     memcpy(buf, outgoing_data, outgoing_data_size);
     if (camkes_virtqueue_driver_send_buffer(&send_virtqueue, buf, outgoing_data_size) != 0) {
         camkes_virtqueue_buffer_free(&send_virtqueue, buf);
+        printf("PINGCLIENT failed to send buffer\n");
         return -1;
     }
+    DEBUG_PRINT("PINGCLIENT package content copied\n");
     send_virtqueue.notify();
+    DEBUG_PRINT("PINGCLIENT Send buffer\n");
     return 0;
 }
 
@@ -182,6 +187,10 @@ int process_eth_packet(char *recv_data, unsigned int recv_data_size)
     }
     if(ip_req->protocol == 17)
     {
+        DEBUG_PRINT("PINGCLIENT recieved udp packet\n");
+#ifdef DEBUG
+        print_ip_packet(recv_data + sizeof(struct ethhdr), recv_data_size - sizeof(struct ethhdr));
+#endif
         return process_udp_req_reply(recv_data, recv_data_size);
     }
     return 0;
@@ -192,8 +201,10 @@ int process_udp_req_reply(char *recv_data,unsigned int recv_data_size)
 //    struct ethhdr *eth_req = (struct ethhdr *) recv_data;
 //    struct iphdr *ip_req = (struct iphdr *)(recv_data + sizeof(struct ethhdr));
     struct udphdr *udp_req = (struct udphdr *)(recv_data + sizeof(struct ethhdr) + sizeof(struct iphdr));
+    DEBUG_PRINT("PINGCLIENT analyse udp header");
     if(ntohs(udp_req->uh_dport) == PINGCLIENT_UDPPORT)
     {
+        DEBUG_PRINT("PINGCLIENT Signal information collected\n");
         // Implement notify function here and maybe more checks?
         pingready_emit();
     }
