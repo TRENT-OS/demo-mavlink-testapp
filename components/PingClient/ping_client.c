@@ -17,6 +17,14 @@
 #include <netinet/in.h>
 #include <netinet/ip_icmp.h>
 #include <arpa/inet.h>
+//#define DEBUG
+#ifdef DEBUG
+#define DEBUG_PRINT(fmt, args...) printf(fmt, ## args)
+#else
+#define DEBUG_PRINT(fmt, args...)
+#endif
+
+
 
 #define ICMP_MSG_SIZE 64 - sizeof(struct icmphdr)
 #define IPV4_LENGTH 4
