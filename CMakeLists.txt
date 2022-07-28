@@ -132,6 +132,19 @@ AddFileToOverlayDir(
     "etc/init.d"
     overlay
 )
+AddFileToOverlayDir(
+    "repeater"
+    "${CMAKE_CURRENT_SOURCE_DIR}/3rdParty/udp-repeater/bin/repeater"
+    "opt"
+    overlay
+)
+AddFileToOverlayDir(
+    "rules.json"
+    "${CMAKE_CURRENT_SOURCE_DIR}/3rdParty/udp-repeater/conf/rules.json"
+    "opt"
+    overlay
+)
+
 AddOverlayDirToRootfs(
     overlay
     "${CAMKES_VM_IMAGES_DIR}/${PLATFORM}/rootfs.cpio.gz"

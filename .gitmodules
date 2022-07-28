@@ -7,3 +7,6 @@
 [submodule "camkes-vm-linux"]
 	path = camkes-vm-linux
 	url = ../../ext/camkes-vm-linux.git
+[submodule "3rdParty/udp-repeater"]
+	path = 3rdParty/udp-repeater
+	url = ../../ext/udp-repeater.git
