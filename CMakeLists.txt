@@ -102,6 +102,12 @@ if(KernelPlatformTK1)
     AddCamkesCPPFlag(cpp_flags CONFIG_VARS Tk1DeviceFwd Tk1Insecure)
 endif()
 
+#-------------------------------------------------------------------------------
+# Make repeater
+
+add_custom_command(OUTPUT ${CMAKE_CURRENT_LIST_DIR}/3rdParty/udp-repeater/bin/repeater
+                   COMMAND make clean && make
+                   WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}/3rdParty/udp-repeater/src)
 
 #-------------------------------------------------------------------------------
 # File server
