@@ -7,4 +7,6 @@ component TestApp {
     IF_OS_SOCKET_USE(networkStack)
 
     consumes PingReady pingready;
+    emits PingRequested pingreq;
+
 }

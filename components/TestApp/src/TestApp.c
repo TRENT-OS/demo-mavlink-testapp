@@ -273,7 +273,14 @@ static OS_Error_t handleMavLinkConnection(const OS_Socket_Handle_t socket,
             debounce--;
             break;
           }
-
+	  static int tmp = 0;
+	  if(tmp <= 0)
+	  {
+          	pingreq_emit();
+          	vm0.wait_for_ready();
+		tmp = 3;
+	  }
+	  tmp--;
           switch (state) {
           case PILOT_STATE_ARM: {
             target_system = msg_in.sysid;

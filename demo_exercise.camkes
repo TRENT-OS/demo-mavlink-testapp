@@ -80,6 +80,7 @@ component PingClient {
     emits Callback self;
     consumes Callback ping_wait;
     emits PingReady pingready;
+    consumes PingRequested pingreq;
 }
 
 assembly {
@@ -164,6 +165,10 @@ assembly {
 
 	connection seL4NotificationNative PingReady (
 	from ping_client.pingready, to testApp.pingready
+	);
+
+	connection seL4NotificationNative PingRequested (
+	from testApp.pingreq, to ping_client.pingreq
 	);
     }
     configuration {

@@ -44,6 +44,15 @@ virtqueue_driver_t send_virtqueue;
 void handle_recv_callback(virtqueue_device_t *vq);
 void handle_send_callback(virtqueue_driver_t *vq);
 
+
+typedef struct
+{
+	void (*wait_for_req)(void);
+} if_pingclient_t;
+
+
+static const if_pingclient_t pingclient0 = {.wait_for_req = pingreq_wait,};
+
 unsigned short one_comp_checksum(char *data, size_t length)
 {
     unsigned int sum = 0;
@@ -154,6 +163,41 @@ int create_arp_req_reply(char *recv_data, unsigned int recv_data_size)
     arp_reply->ea_hdr.ar_pln = IPV4_LENGTH;
 
     return send_outgoing_packet(reply_buffer, sizeof(struct ethhdr) + sizeof(struct ether_arp));
+}
+
+int create_icmp_req_reply(char *recv_data, unsigned int recv_data_size);
+int process_udp_req_reply(char *recv_data,unsigned int recv_data_size);
+int process_eth_packet(char *recv_data, unsigned int recv_data_size)
+{
+    //struct ethhdr *eth_req = (struct ethhdr *) recv_data;
+    struct iphdr *ip_req = (struct iphdr *)(recv_data + sizeof(struct ethhdr));
+    //struct icmphdr *icmp_req = (struct icmphdr *)(recv_data + sizeof(struct ethhdr) + sizeof(struct iphdr));
+
+    if (ip_req->protocol == 1)
+    {
+        char ip_packet[ETHERMTU];
+        memcpy(ip_packet, recv_data + sizeof(struct ethhdr), recv_data_size - sizeof(struct ethhdr));
+        print_ip_packet(ip_packet, recv_data_size - sizeof(struct ethhdr));
+        return create_icmp_req_reply(recv_data, recv_data_size);
+    }
+    if(ip_req->protocol == 17)
+    {
+        return process_udp_req_reply(recv_data, recv_data_size);
+    }
+    return 0;
+}
+
+int process_udp_req_reply(char *recv_data,unsigned int recv_data_size)
+{
+//    struct ethhdr *eth_req = (struct ethhdr *) recv_data;
+//    struct iphdr *ip_req = (struct iphdr *)(recv_data + sizeof(struct ethhdr));
+    struct udphdr *udp_req = (struct udphdr *)(recv_data + sizeof(struct ethhdr) + sizeof(struct iphdr));
+    if(ntohs(udp_req->uh_dport) == PINGCLIENT_UDPPORT)
+    {
+        // Implement notify function here and maybe more checks?
+        pingready_emit();
+    }
+    return 0;
 }
 
 int send_udp_packet(void)
@@ -267,12 +311,8 @@ void handle_recv_data(char *recv_data, unsigned int recv_data_size)
     if (ntohs(rcv_req->h_proto) == ETH_P_ARP) {
         create_arp_req_reply(recv_data, recv_data_size);
     } else if (ntohs(rcv_req->h_proto) == ETH_P_IP) {
-        char ip_packet[ETHERMTU];
-        memcpy(ip_packet, recv_data + sizeof(struct ethhdr), recv_data_size - sizeof(struct ethhdr));
-        print_ip_packet(ip_packet, recv_data_size - sizeof(struct ethhdr));
-        create_icmp_req_reply(recv_data, recv_data_size);;
+        process_eth_packet(recv_data, recv_data_size);
     }
-
 }
 
 void handle_recv_callback(virtqueue_device_t *vq)
@@ -346,5 +386,10 @@ int run(void)
         return 1;
     }
 
+    while(1)
+    {
+        pingclient0.wait_for_req();
+        send_udp_packet();
+    }
     return 0;
 }
