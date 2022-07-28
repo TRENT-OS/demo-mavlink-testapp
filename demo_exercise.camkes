@@ -200,6 +200,7 @@ assembly {
         )
         NetworkStack_PicoTcp_INSTANCE_CONFIGURE_CLIENTS(
             nwStack,
+            2,
             2
         )
 
