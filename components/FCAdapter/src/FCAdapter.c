@@ -136,10 +136,3 @@ fcAdapter_rpc_sendMessage(
     return OS_SUCCESS;
 }
 
-int run(
-    void)
-{
-    Debug_LOG_INFO("[FCAdapter '%s'] starting", get_instance_name());
-
-    return 0;
-}
