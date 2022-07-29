@@ -23,7 +23,7 @@ os_sdk_import_camkes_vm_arm()
 os_sdk_import_from_global_components("components/FileServer")
 os_sdk_import_from_global_components("components/VirtQueue")
 
-project(demo_exercise C)
+project(demo_mavlink_testapp C)
 
 # Network stack
 CAmkESAddCPPInclude("plat/${PLATFORM}")
@@ -56,10 +56,6 @@ TimeServer_DeclareCAmkESComponent(
   TimeServer
 )
 
-FCAdapter_DeclareCAmkESComponent(
-  FCAdapter
-)
-
 DeclareCAmkESComponent(
   TestApp
   INCLUDES
@@ -74,6 +70,22 @@ DeclareCAmkESComponent(
     os_core_api
     os_socket_client
     system_config
+)
+
+DeclareCAmkESComponent(
+  FCAdapter
+  INCLUDES
+  SOURCES
+    components/FCAdapter/src/FCAdapter.c
+  C_FLAGS
+    -Wall
+    -Werror
+  LIBS
+    lib_debug
+    lib_macros
+    lib_mavlink
+    os_core_api
+    os_socket_client
 )
 
 DeclareCAmkESComponent(
@@ -194,4 +206,4 @@ CAmkESAddCPPInclude("${SDK_SEL4_CAMKES_DIR}/libs/sel4_projects_libs/libsel4vm/in
 
 #-------------------------------------------------------------------------------
 
-os_sdk_create_CAmkES_system("demo_exercise.camkes")
+os_sdk_create_CAmkES_system("demo_mavlink_testapp.camkes")
