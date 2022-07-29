@@ -41,8 +41,8 @@ import <FileServer/FileServer.camkes>;
 //------------------------------------------
 
 #include "system_config.h"
+
 // Use Chanmux instead of nic for QEMU arm virt
-//#include "plat_nic.camkes"
 #include "ChanMux/ChanMux_UART.camkes"
 ChanMux_UART_COMPONENT_DEFINE(
     ChanMux_UART,
@@ -52,7 +52,6 @@ ChanMux_UART_COMPONENT_DEFINE(
 
 #include "NIC_ChanMux/NIC_ChanMux.camkes"
 NIC_ChanMux_COMPONENT_DEFINE(NwDriver, NIC_DRIVER_RINGBUFFER_SIZE)
-
 
 #include "RamDisk/RamDisk.camkes"
 RamDisk_COMPONENT_DEFINE(RamDisk)
@@ -69,9 +68,7 @@ NetworkStack_PicoTcp_COMPONENT_DEFINE(
 #include "TimeServer/camkes/TimeServer.camkes"
 TimeServer_COMPONENT_DEFINE(TimeServer)
 
-#include "FCAdapter/camkes/FCAdapter.camkes"
-FCAdapter_COMPONENT_DEFINE(FCAdapter)
-
+#include "components/FCAdapter/FCAdapter.camkes"
 #include "components/TestApp/TestApp.camkes"
 
 
@@ -129,10 +126,9 @@ assembly {
         
         // Flight Controller Adapter
         component FCAdapter fcAdapter;
-        FCAdapter_INSTANCE_CONNECT_CLIENTS(
-            fcAdapter,
-            testApp, fcAdapter
-        )
+        connection seL4RPCCall testApp_fcAdapter_rpc(
+            from testApp.fcAdapter_rpc,
+            to   fcAdapter.fcAdapter_rpc);
 
         // Demo Component
         component TestApp testApp;

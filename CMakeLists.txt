@@ -37,7 +37,7 @@ NetworkStack_PicoTcp_DeclareCAmkESComponent(
     -DSUBNET_MASK=ETH_SUBNET_MASK
 )
 
-#ChanMux Nic
+# ChanMux NIC
 NIC_ChanMux_DeclareCAmkESComponent(
     NwDriver
     CHANMUX_CHANNEL_NIC_CTRL
@@ -50,7 +50,6 @@ ChanMux_UART_DeclareCAmkESComponents(
     system_config
 )
 
-
 # Time server
 TimeServer_DeclareCAmkESComponent(
   TimeServer
@@ -59,6 +58,7 @@ TimeServer_DeclareCAmkESComponent(
 DeclareCAmkESComponent(
   TestApp
   INCLUDES
+    include
   SOURCES
     components/TestApp/src/TestApp.c
   C_FLAGS
@@ -66,7 +66,6 @@ DeclareCAmkESComponent(
     -Werror
   LIBS
     lib_debug
-    lib_mavlink
     os_core_api
     os_socket_client
     system_config
@@ -75,6 +74,7 @@ DeclareCAmkESComponent(
 DeclareCAmkESComponent(
   FCAdapter
   INCLUDES
+    include
   SOURCES
     components/FCAdapter/src/FCAdapter.c
   C_FLAGS
@@ -83,7 +83,6 @@ DeclareCAmkESComponent(
   LIBS
     lib_debug
     lib_macros
-    lib_mavlink
     os_core_api
     os_socket_client
 )

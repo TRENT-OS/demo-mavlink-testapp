@@ -6,8 +6,8 @@ component TestApp {
     // Networking
     IF_OS_SOCKET_USE(networkStack)
 
-    // Flight controller
-    IF_FCADAPTER_USE(fcAdapter)
+    // FCAdapter
+    uses if_FCAdapter fcAdapter_rpc;
 
     consumes PingReady pingready;
     emits PingRequested pingreq;

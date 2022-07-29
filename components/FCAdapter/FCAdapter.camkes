@@ -1,0 +1,15 @@
+/*
+ * Copyright (C) 2022, HENSOLDT Cyber GmbH
+ */
+
+#pragma once
+
+#include "if_FCAdapter.camkes"
+
+#include "if_OS_Socket.camkes"
+
+component FCAdapter {
+    provides if_FCAdapter fcAdapter_rpc;
+    
+    IF_OS_SOCKET_USE(networkStack)
+}

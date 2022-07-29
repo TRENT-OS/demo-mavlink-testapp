@@ -1,16 +1,13 @@
 #include <stdlib.h>
 #include <string.h>
-
-// Has to be included before FCAdapter_client.h
-#include "mavlink/common/mavlink.h"
-
-#include "FCAdapter_client.h"
-#include "OS_Socket.h"
-#include "lib_debug/Debug.h"
 #include <camkes.h>
 
+#include "OS_Socket.h"
+#include "lib_debug/Debug.h"
+
+#include "mavlink/common/mavlink.h"
+
 static const if_OS_Socket_t networkStackCtx = IF_OS_SOCKET_ASSIGN(networkStack);
-static const if_FCAdapter_t fcAdapterCtx = IF_FCADAPTER_ASSIGN(fcAdapter);
 
 typedef struct
 {
@@ -22,9 +19,9 @@ static const if_vm0_t vm0 = {.wait_for_ready = pingready_wait,};
 /**
  * Waits until the network stack is initialized.
  */
-static OS_Error_t waitForNetworkStackInit(const if_OS_Socket_t *const ctx) {
+static OS_Error_t waitForNetworkStackInit() {
   for (;;) {
-    OS_NetworkStack_State_t state = OS_Socket_getStatus(ctx);
+    OS_NetworkStack_State_t state = OS_Socket_getStatus(&networkStackCtx);
     if (state == RUNNING) {
       return OS_SUCCESS;
     } else if (state == FATAL_ERROR) {
@@ -69,9 +66,9 @@ static OS_Error_t handleMavLinkConnection(void) {
   bool mode_set = false;
 
   for (;;) {
-    ret = FCAdapter_recvMessage(&fcAdapterCtx, &msg_in);
+    ret = fcAdapter_rpc_recvMessage(&msg_in);
     if (ret != OS_SUCCESS) {
-      Debug_LOG_ERROR("`FCAdapter_recvMessage` failed. Error code: %d", ret);
+      Debug_LOG_ERROR("`fcAdapter_rpc_recvMessage` failed. Error code: %d", ret);
       return ret;
     }
     Debug_LOG_DEBUG("Received MAVLINK message (ID: %d, "
@@ -110,9 +107,9 @@ static OS_Error_t handleMavLinkConnection(void) {
         mavlink_msg_command_long_encode(MAVLINK_THIS_SYSTEM_ID,
                                         MAVLINK_THIS_COMPONENT_ID, &msg_out,
                                         &cmd_out);
-        ret = FCAdapter_sendMessage(&fcAdapterCtx, &msg_out);
+        ret = fcAdapter_rpc_sendMessage(&msg_out);
         if (ret != OS_SUCCESS) {
-          Debug_LOG_ERROR("`FCAdapter_sendMessage` failed. "
+          Debug_LOG_ERROR("`fcAdapter_rpc_sendMessage` failed. "
                           "Error code: %d",
                           ret);
           return ret;
@@ -132,9 +129,9 @@ static OS_Error_t handleMavLinkConnection(void) {
         mavlink_msg_command_long_encode(MAVLINK_THIS_SYSTEM_ID,
                                         MAVLINK_THIS_COMPONENT_ID, &msg_out,
                                         &cmd_out);
-        ret = FCAdapter_sendMessage(&fcAdapterCtx, &msg_out);
+        ret = fcAdapter_rpc_sendMessage(&msg_out);
         if (ret != OS_SUCCESS) {
-          Debug_LOG_ERROR("`FCAdapter_sendMessage` failed. "
+          Debug_LOG_ERROR("`fcAdapter_rpc_sendMessage` failed. "
                           "Error code: %d",
                           ret);
           return ret;
@@ -158,9 +155,9 @@ static OS_Error_t handleMavLinkConnection(void) {
         mavlink_msg_command_long_encode(MAVLINK_THIS_SYSTEM_ID,
                                         MAVLINK_THIS_COMPONENT_ID, &msg_out,
                                         &cmd_out);
-        ret = FCAdapter_sendMessage(&fcAdapterCtx, &msg_out);
+        ret = fcAdapter_rpc_sendMessage(&msg_out);
         if (ret != OS_SUCCESS) {
-          Debug_LOG_ERROR("`FCAdapter_sendMessage` failed. "
+          Debug_LOG_ERROR("`fcAdapter_rpc_sendMessage` failed. "
                           "Error code: %d",
                           ret);
           return ret;
@@ -186,9 +183,9 @@ static OS_Error_t handleMavLinkConnection(void) {
           mavlink_msg_set_position_target_local_ned_encode(
               MAVLINK_THIS_SYSTEM_ID, MAVLINK_THIS_COMPONENT_ID, &msg_out,
               &setpoint);
-          ret = FCAdapter_sendMessage(&fcAdapterCtx, &msg_out);
+          ret = fcAdapter_rpc_sendMessage(&msg_out);
           if (ret != OS_SUCCESS) {
-            Debug_LOG_ERROR("`FCAdapter_sendMessage` "
+            Debug_LOG_ERROR("`fcAdapter_rpc_sendMessage` "
                             "failed. Error code: %d",
                             ret);
             return ret;
@@ -209,9 +206,9 @@ static OS_Error_t handleMavLinkConnection(void) {
           mavlink_msg_manual_control_encode(MAVLINK_THIS_SYSTEM_ID,
                                             MAVLINK_THIS_COMPONENT_ID, &msg_out,
                                             &ctrl);
-          ret = FCAdapter_sendMessage(&fcAdapterCtx, &msg_out);
+          ret = fcAdapter_rpc_sendMessage(&msg_out);
           if (ret != OS_SUCCESS) {
-            Debug_LOG_ERROR("`FCAdapter_sendMessage` "
+            Debug_LOG_ERROR("`fcAdapter_rpc_sendMessage` "
                             "failed. Error code: %d",
                             ret);
             return ret;
@@ -232,9 +229,9 @@ static OS_Error_t handleMavLinkConnection(void) {
           mavlink_msg_command_long_encode(MAVLINK_THIS_SYSTEM_ID,
                                           MAVLINK_THIS_COMPONENT_ID, &msg_out,
                                           &cmd_out);
-          ret = FCAdapter_sendMessage(&fcAdapterCtx, &msg_out);
+          ret = fcAdapter_rpc_sendMessage(&msg_out);
           if (ret != OS_SUCCESS) {
-            Debug_LOG_ERROR("`FCAdapter_sendMessage` "
+            Debug_LOG_ERROR("`fcAdapter_rpc_sendMessage` "
                             "failed. Error code: %d",
                             ret);
             return ret;
@@ -363,7 +360,7 @@ int run() {
   Debug_LOG_INFO("wait for vm0");
   vm0.wait_for_ready();
   Debug_LOG_INFO("vm0 ready");
-  ret = waitForNetworkStackInit(&networkStackCtx);
+  ret = waitForNetworkStackInit();
   if (ret != OS_SUCCESS) {
     Debug_LOG_ERROR("`waitForNetworkStackInit` failed. Error code: %d", ret);
     return -1;
@@ -375,9 +372,9 @@ int run() {
       .addr = ETH_ADDR,
       .port = MAVLINK_LISTEN_PORT,
   };
-  ret = FCAdapter_init(&fcAdapterCtx, &serverAddr, MAVLINK_CHANNEL);
+  ret = fcAdapter_rpc_init(&serverAddr, MAVLINK_CHANNEL);
   if (ret != OS_SUCCESS) {
-    Debug_LOG_ERROR("`FCAdapter_init` failed. Error code: %d", ret);
+    Debug_LOG_ERROR("`fcAdapter_rpc_init` failed. Error code: %d", ret);
     return -1;
   }
   Debug_LOG_DEBUG("Finished initializing FCAdapter.");
