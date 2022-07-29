@@ -94,7 +94,7 @@ assembly {
         component ChanMux_UART chanMux_UART;
         component UART_CHANMUX uart;
         ChanMux_UART_INSTANCE_CONNECT(chanMux_UART, uart)
-	//----------------------------------------------------------------------
+        //----------------------------------------------------------------------
         // Network Driver
         //----------------------------------------------------------------------
         component NwDriver nwDriver;
