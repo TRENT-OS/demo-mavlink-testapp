@@ -163,7 +163,7 @@ AddOverlayDirToRootfs(
 AddToFileServer("linux-initrd" "${VM_IMG_ROOTFS_PATCHED}")
 
 UpdateDtbFromInitrd(
-    "${CAMKES_VM_IMAGES_DIR}/qemu-arm-virt/linux-dtb"
+    "${CAMKES_VM_IMAGES_DIR}/${PLATFORM}/linux-dtb"
     "${VM_IMG_ROOTFS_PATCHED}"
     "0x4d700000"
     target_dtb_gen
@@ -176,7 +176,7 @@ DefineCAmkESVMFileServer(
     FILES
         "linux:${VM_IMG_LINUX}"
         "linux-initrd:${VM_IMG_ROOTFS_PATCHED}"
-	#	"linux-dtb:${DTB_FOR_VM}"
+        #        "linux-dtb:${DTB_FOR_VM}"
     DEPENDS
         rootfs_target
         target_dtb_gen
