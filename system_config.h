@@ -39,8 +39,8 @@
 
 // Network stack
 #define OS_NETWORK_MAXIMUM_SOCKET_NO 16
-#define ETH_ADDR "10.0.0.11"
-#define ETH_GATEWAY_ADDR "10.0.0.1"
+#define ETH_ADDR "10.0.1.11"
+#define ETH_GATEWAY_ADDR "10.0.1.1"
 #define ETH_SUBNET_MASK "255.255.255.0"
 #define MAVLINK_LISTEN_PORT 14540
 

@@ -21,7 +21,7 @@ cd $SCRIPTPATH
 tmux new-session -d -s "$SESSION" 'Blocks/LinuxNoEditor/Blocks.sh -windowed -opengl4'
 
 #tmux split-window -h 'mavp2p udps:127.0.0.1:14550 tcpc:172.17.0.1:14540'
-tmux split-window -h 'mavp2p udps:127.0.0.1:14550 tcpc:10.0.0.11:14540'
+tmux split-window -h 'mavp2p udps:127.0.0.1:14550 tcpc:10.0.1.11:14540'
 
 
 echo "Please click in Popup window on OK"

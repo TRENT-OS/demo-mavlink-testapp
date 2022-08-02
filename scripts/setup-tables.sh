@@ -2,7 +2,7 @@
 
 BRIDGE_NAME=br0
 TAP_INTERFACES=(tap0)
-IP_ADDRESS=10.0.0.1
+IP_ADDRESS=10.0.1.1
 # netmask length in bits
 NETWORK_SIZE=24
 
