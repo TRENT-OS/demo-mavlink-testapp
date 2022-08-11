@@ -38,6 +38,7 @@ assembly {
         //----------------------------------------------------------------------
         component ChanMux_UART chanMux_UART;
         component UART_CHANMUX uart;
+        component SysCtrl sysctrl;
         ChanMux_UART_INSTANCE_CONNECT(chanMux_UART, uart)
 	//----------------------------------------------------------------------
         // Network Driver
@@ -48,6 +49,7 @@ assembly {
             chanMux_UART,
             nwDriver, data, ctrl
         )
+        connection seL4RPCCall con_sysctrl(from uart.sysctrl_rpc, to sysctrl.sysctrl_rpc);
 
 
         // Network driver
