@@ -91,6 +91,7 @@ assembly {
         component ChanMux_UART chanMux_UART;
         component UART_CHANMUX uart;
         ChanMux_UART_INSTANCE_CONNECT(chanMux_UART, uart)
+
         //----------------------------------------------------------------------
         // Network Driver
         //----------------------------------------------------------------------
@@ -100,10 +101,6 @@ assembly {
             chanMux_UART,
             nwDriver, data, ctrl
         )
-
-
-        // Network driver
-        //EXERCISE_DEMO_NIC_INSTANCE(nwDriver)
 
         // Network stack
         component NetworkStack_PicoTcp nwStack;
@@ -132,6 +129,7 @@ assembly {
 
         // Demo Component
         component TestApp testApp;
+
         //-----------------------------------------------------
         // VM components
         //-----------------------------------------------------
@@ -156,28 +154,31 @@ assembly {
         component VirtQueueInit ping_vqinit1;
 
         connection seL4VirtQueues ping_virtq_conn0(
-	    to ping_vqinit0.init,
-	    from ping_client.send,
-	    from vm0.recv
-	);
+            to ping_vqinit0.init,
+            from ping_client.send,
+            from vm0.recv
+        );
         connection seL4VirtQueues ping_virtq_conn1(
-	    to ping_vqinit1.init,
-	    from ping_client.recv,
-	    from vm0.send
-	);
+            to ping_vqinit1.init,
+            from ping_client.recv,
+            from vm0.send
+        );
         connection seL4GlobalAsynchCallback ping_global_callback(
-	    from ping_client.self,
-	    to ping_client.ping_wait
-	);
+            from ping_client.self,
+            to ping_client.ping_wait
+        );
 
-	connection seL4NotificationNative PingReady (
-	from ping_client.pingready, to testApp.pingready
-	);
+        connection seL4NotificationNative PingReady (
+            from ping_client.pingready,
+            to testApp.pingready
+        );
 
-	connection seL4NotificationNative PingRequested (
-	from testApp.pingreq, to ping_client.pingreq
-	);
+        connection seL4NotificationNative PingRequested (
+            from testApp.pingreq,
+            to ping_client.pingreq
+        );
     }
+
     configuration {
         // Storage
         ramDisk.storage_size = 2 * 1024 * 1024;
