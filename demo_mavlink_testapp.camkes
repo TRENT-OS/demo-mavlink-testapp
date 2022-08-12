@@ -205,13 +205,6 @@ assembly {
             nwStack.timeServer_rpc
         )
 
-        // Flight Controller Adapter
-        FCAdapter_INSTANCE_CONFIGURE(
-            fcAdapter,
-            ETH_ADDR,
-            MAVLINK_LISTEN_PORT
-        )
-
         //-------------------------------------------
         // VM configuration
         //-------------------------------------------
