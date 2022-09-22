@@ -124,7 +124,6 @@ find_package(camkes-vm-linux REQUIRED)
 
 include("${CAMKES_VM_LINUX_HELPERS_PATH}")
 
-AddToFileServer("linux" "${CAMKES_VM_IMAGES_DIR}/${PLATFORM}/linux")
 set(VM_ROOTFS_FILE "${CAMKES_VM_IMAGES_DIR}/${PLATFORM}/rootfs.cpio.gz")
 
 # patch root-fs
@@ -162,7 +161,6 @@ AddOverlayDirToRootfs(
     rootfs_target
     GZIP
 )
-AddToFileServer("linux-initrd" "${VM_IMG_ROOTFS_PATCHED}")
 
 UpdateDtbFromInitrd(
     "${CAMKES_VM_IMAGES_DIR}/${PLATFORM}/linux-dtb"
@@ -171,7 +169,6 @@ UpdateDtbFromInitrd(
     target_dtb_gen
     DTB_FOR_VM
 )
-#AddToFileServer("linux-dtb" "${DTB_FOR_VM}" DEPENDS target_dtb_gen)
 
 DefineCAmkESVMFileServer(
     INSTANCE "fileServer"
@@ -182,13 +179,6 @@ DefineCAmkESVMFileServer(
     DEPENDS
         rootfs_target
         target_dtb_gen
-)
-
-ExtendCAmkESComponentInstance(
-    FileServer
-    fileServer
-    LIBS
-        fileserver_cpio
 )
 
 
