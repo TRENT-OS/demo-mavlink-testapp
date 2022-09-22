@@ -20,9 +20,11 @@ set(VmVirtioNetVirtqueue ON CACHE BOOL "" FORCE)
 include("${CMAKE_CURRENT_LIST_DIR}/plat/${PLATFORM}/plat.cmake")
 
 os_sdk_setup(CONFIG_FILE "system_config.h" CONFIG_PROJECT "system_config")
-os_sdk_import_camkes_vm_arm()
-os_sdk_import_from_global_components("components/FileServer")
-os_sdk_import_from_global_components("components/VirtQueue")
+os_sdk_import_camkes_vm()
+os_sdk_import_from_global_components(
+    "components/FileServer"
+    "components/VirtQueue"
+)
 
 project(demo_exercise C)
 
