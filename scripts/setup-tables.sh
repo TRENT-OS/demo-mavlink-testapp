@@ -1,4 +1,11 @@
 #!/bin/bash
+#
+# Copyright (C) 2022-2024, HENSOLDT Cyber GmbH
+# 
+# SPDX-License-Identifier: GPL-2.0-or-later
+#
+# For commercial licensing, contact: info.cyber@hensoldt.net
+#
 
 BRIDGE_NAME=br0
 TAP_INTERFACES=(tap0)
